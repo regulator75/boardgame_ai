@@ -2,6 +2,7 @@
 // Data
 //
 var properties = [];
+var players = [];
 
 function Rect(x,y,w,h) {
 	return {
@@ -9,6 +10,14 @@ function Rect(x,y,w,h) {
 		y:y,
 		w:w,
 		h:h
+	}
+}
+
+function MakePlayer() {
+	return {
+		spot: 0,
+		money: 2000,
+		marker_color: "#00ff00"
 	}
 }
 
@@ -21,8 +30,66 @@ function DrawBoard(){
 	background.onload = function() {
 		ctx.drawImage(background,0,0,c.width, c.height) // ,c.width, c.height
 		DebugDraw(ctx);
+		DrawPlayerPieces(ctx);
 	}
 }
+
+function GetPlayersOnSpot(spot) {
+	return players.filter(function(p) { return p.spot == spot })
+}
+
+function GetLocationsForSpotAndCount(spot, playercount) {
+	// Ugly lineup implementation
+
+	function spotIsVertical(s) {
+		return (s < 11 || (s>19 && s<31))
+	}
+
+	var toreturn = [];
+	var prop = properties[spot];
+	if(spotIsVertical(spot)) {
+		spread = prop.w/3
+	} else {
+		spread = prop.h/3
+	}
+	// Impl 1, cheesy
+
+	if(playercount == 1) {
+		toreturn.push({x:prop.x+prop.w/2, y:(prop.y+prop.h/2)})
+	} else {
+		for(i = 0 ; i < playercount ; i++) {
+			var topush = null;
+			if(spotIsVertical(spot)) {
+				topush = {x:prop.x+prop.w/2 + (-spread/2 + spread*(i/(playercount-1))), y:(prop.y+prop.h/2)};
+			} else {
+				topush = {x:prop.x+prop.w/2 , y:(prop.y+prop.h/2) + (-spread/2 + spread*(i/(playercount-1))) };
+			}
+			toreturn.push(topush)
+		}
+	}
+	return toreturn;
+}
+
+function DrawPlayerPieces(ctx){
+
+	// This algorithm looks bakwards, but its to
+	// prevent pieces from being drawn on top of 
+	// each other.
+	for(var i = 0 ; i < 40 ; i++) { // 40 spots on the board
+		var players_here = GetPlayersOnSpot(i);
+		var marker_locations = GetLocationsForSpotAndCount(i,players_here.length);
+		for(x = 0 ; x < players_here.length ; x++) {
+			ctx.beginPath();
+			ctx.arc(marker_locations[x].x, marker_locations[x].y, 20, 0, 2 * Math.PI, false);
+			ctx.fillStyle = players_here[x].marker_color;
+			ctx.fill();
+			ctx.lineWidth = 2;
+			ctx.strokeStyle = '#003300';
+			ctx.stroke();
+		}
+	}
+}
+
 
 function DebugDraw(ctx) {
 	ctx.beginPath();
@@ -84,7 +151,7 @@ function CalculatePieceLocations(c) {
 
     // Third row
     for(var i3 = 1 ; i3 <= 9; i3++) {
-    	properties.push(Rect(property_height+property_width*(i3-1),0, property_width, property_height))
+    	properties.push(Rect(property_height+	property_width*(i3-1),0, property_width, property_height))
     }
 
     // Push "Go to jail", top right
@@ -101,6 +168,18 @@ function CalculatePieceLocations(c) {
 }
 
 function OnLoad() {
+	players.push(MakePlayer())
+	players.push(MakePlayer())
+	players.push(MakePlayer())
+	players.push(MakePlayer())
+
+	players[1].marker_color = "#ff00ff"
+	players[2].marker_color = "#ff0000"
+	players[3].marker_color = "#000000"
+
+	players[2].spot=15
+	players[3].spot=15
+
 	// Draw current board
 	CalculatePieceLocations(document.getElementById("myCanvas"));
 	DrawBoard();
