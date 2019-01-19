@@ -21,6 +21,30 @@ function MakePlayer() {
 	}
 }
 
+var all_slots = []
+
+var TYPE_LAND = 1
+var TYPE_JAIL = 2
+var TYPE_FREEPARKING = 3
+function MakeNormalProperty(slot, name, price, houseprice, rent, family, rail, waterelect) {
+	prop = {
+		type: TYPE_LAND
+		name: name,
+		price: price,
+		houseprice: houseprice, // Cost to build one house 
+		slot: slot,
+		rent: rent, // empty, 1,2,3,4 houses, hotel
+		family: family, // brown, blue, pink etc.
+		isRailroad: false, // duh.. is this a gas-station
+		isWaterOrElectricity : waterelect
+	}
+	all_slots[slot] = prop;
+}
+
+function MakeChanceProperty
+
+
+
 function DrawBoard(){
 	var c = document.getElementById("myCanvas");
 	var ctx = c.getContext("2d");
@@ -171,6 +195,70 @@ function CalculatePieceLocations(c) {
 
 
 }
+
+
+function MakeProperties() {
+
+	// slot, name, price, houseprice, rent, family, rail, waterelect) {
+	// Normal properties
+	MakeNormalProperty(1, "Mediteraninean Avenue", 60,50,[2,10,30,90,160,250],"brown",false,false);
+	MakeNormalProperty(3, "Baltic Avenue",         60,50,[4,20,60,180,320,450],"brown",false,false);
+
+	MakeNormalProperty(6, "666", 		 100,50,[6,30,90,270,400,550],"light blue",false,false);
+	MakeNormalProperty(8, "888",         100,50,[6,30,90,270,400,550],"light blue",false,false);
+	MakeNormalProperty(9, "999",         120,50,[8,40,100,300,450,600],"light blue",false,false);
+
+	MakeNormalProperty(11, "11", 	 	 140,100,[10,50,150,450,625,750],"pink",false,false);
+	MakeNormalProperty(13, "13",         140,100,[10,50,150,450,625,750],"pink",false,false);
+	MakeNormalProperty(14, "14",         160,100,[12,60,180,500,700,900],"pink",false,false);
+
+	MakeNormalProperty(16, "16", 		 180,100,[14,70,200,550,750,950],"orange",false,false);
+	MakeNormalProperty(18, "18",         180,100,[14,70,200,550,750,950],"orange",false,false);
+	MakeNormalProperty(19, "19",         200,100,[16,80,220,600,800,1000],"orange",false,false);
+
+	MakeNormalProperty(21, "21", 		 220,150,[18,90,250,700,875,1050],"red",false,false);
+	MakeNormalProperty(23, "21", 		 220,150,[18,90,250,700,875,1050],"red",false,false);
+	MakeNormalProperty(24, "24",         240,150,[20,100,300,750,925,1100],"red",false,false);
+
+	MakeNormalProperty(26, "26", 		 260,150,[22,110,330,800,975,1150],"yellow",false,false);
+	MakeNormalProperty(27, "27", 		 260,150,[22,110,330,800,975,1150],"yellow",false,false);
+	MakeNormalProperty(29, "29",         280,150,[24,120,360,850,1025,1200],"yellow",false,false);	
+
+	MakeNormalProperty(31, "31", 		 300,200,[26,130,390,900,1100,1275],"green",false,false);
+	MakeNormalProperty(32, "32",         300,200,[26,130,390,900,1100,1275],"green",false,false);
+	MakeNormalProperty(34, "34",         320,200,[28,150,450,1000,1200,1400],"green",false,false);
+
+	MakeNormalProperty(37, "37", 		 350,200,[35,175,500,1100,1300,1500],"royal blue",false,false);
+	MakeNormalProperty(39, "39",         400,200,[50,100,200,600,1400,1700,2000],"royal blue",false,false);
+
+		// Railroads
+	MakeNormalProperty( 5, "Reading Railroad",      100,null,null,"rail",true,false);
+	MakeNormalProperty(15, "Pennsylvania Railroad", 100,null,null,"rail",true,false);
+	MakeNormalProperty(25, "B&O Railroad",          100,null,null,"rail",true,false);
+	MakeNormalProperty(35, "Short Line",            100,null,null,"rail",true,false);
+
+	// Verk
+	MakeNormalProperty(12, "Electric company",      100,null,null,"verk",false,true);
+	MakeNormalProperty(28, "Water works",           100,null,null,"verk",false,true);
+
+	// Chance-slots
+}
+
+//
+// Pseudo code
+// 
+// While(PlayerHaveNotRolledDice()) {
+//    ask her to make deals
+// }
+// RollDice()
+// MoveForward()
+// p = GetProperty()
+// Switch(p) {
+// case Property
+}
+}
+
+
 
 function OnLoad() {
 	players.push(MakePlayer())
