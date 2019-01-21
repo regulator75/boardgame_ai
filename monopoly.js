@@ -157,40 +157,54 @@ function DrawPlayerPieces(ctx){
 function DrawHouses(ctx) {
 
 	var house_img_size = 50
-	var house_move_from_playser
 
 	var houseimage = new Image();
-	houseimage.src="monopoly_green_house.png"
-	houseimage.onload = function() {
-		for(var i = 0 ; i < 40 ; i++) { // 40 spots on the board
-			var green_houses_here = UI_GetGreenHousesAtSlot(i)
+	var hotelimage = new Image();
 
-			var trans_x = 0;
-			var trans_y = 0;
-			row = UI_GetRowForSlot(i);
-			switch(row) {
-				case 0: trans_y = -50; break;
-				case 1: trans_x = +50; break;
-				case 2: trans_y = +50; break;
-				case 3: trans_x = -50; break;
-			}		
+	//
+	// Chain-load the two images then draw.
+	//
 
-			trans_x -= house_img_size/2;
-			trans_y -= house_img_size/2;
+	hotelimage.src="monopoly_red_house.png"
 
-			// Cheat, use the player locatoin algorithm. Them move towards center.
-			var marker_locations = UI_GetLocationsForSpotAndCount(i,green_houses_here, 0.5, trans_x, trans_y);
-			
-			for(x = 0 ; x < green_houses_here ; x++) {
-				ctx.beginPath();
+	// Chain calls, when both are loaded do the drawing.
+	hotelimage.onload = function() {
+		houseimage.src="monopoly_green_house.png"
+		houseimage.onload = function() {
+			for(var i = 0 ; i < 40 ; i++) { // 40 spots on the board
+				var green_houses_here = UI_GetGreenHousesAtSlot(i)
+				var red_houses_here = UI_GetHotelsAtSlot(i)
 
-				ctx.drawImage(houseimage,marker_locations[x].x, marker_locations[x].y,house_img_size,house_img_size)
-				//ctx.arc(marker_locations[x].x, marker_locations[x].y, 20, 0, 2 * Math.PI, false);
-				ctx.fillStyle = '#00ff00';
-				ctx.fill();
-				ctx.lineWidth = 2;
-				ctx.strokeStyle = '#003300';
-				ctx.stroke();
+				// Since we are cheating and using the player-marker calculations
+				// for spread, we need to move the houses closer to the center of the
+				// board to make it look good.
+				var trans_x = 0;
+				var trans_y = 0;
+				row = UI_GetRowForSlot(i);
+				switch(row) {
+					case 0: trans_y = -50; break;
+					case 1: trans_x = +50; break;
+					case 2: trans_y = +50; break;
+					case 3: trans_x = -50; break;
+				}		
+
+				// Dont use top left corner as origin, but the center of the house.
+				trans_x -= house_img_size/2;
+				trans_y -= house_img_size/2;
+
+				// Figure out if we are drawing a hotel or a normal house.
+				var imageToUse = red_houses_here ? hotelimage : houseimage;
+
+				// Cheat, use the player location algorithm. Them move towards center.
+				var houses = red_houses_here>0 ? red_houses_here : green_houses_here;
+				var marker_locations = UI_GetLocationsForSpotAndCount(i,houses, 0.5, trans_x, trans_y);
+
+				// Actually draw.
+				ctx.beginPath();				
+				for(x = 0 ; x < houses ; x++) { // For each house
+					ctx.drawImage(imageToUse,marker_locations[x].x, marker_locations[x].y,house_img_size,house_img_size)
+				}
+				ctx.stroke();				
 			}
 		}
 	}
@@ -204,7 +218,7 @@ function DebugDraw(ctx) {
 	ctx.font = "30px Verdana";
 	for(p in properties) {
 		r = properties[p];
-		ctx.rect(r.x,r.y,r.w,r.h)
+		//ctx.rect(r.x,r.y,r.w,r.h)
 		ctx.fillText(""+p, r.x+r.w/2, r.y+r.h/2)
 	}
 	ctx.stroke();
@@ -407,6 +421,7 @@ function MakeProperties() {
     AddHouseToSlot(16);
     AddHouseToSlot(16);
     AddHouseToSlot(16);
+    AddHouseToSlot(16);
 
     AddHouseToSlot(18);
     AddHouseToSlot(18);
@@ -423,6 +438,7 @@ function MakeProperties() {
     AddHouseToSlot(29);   
 
 
+    AddHouseToSlot(37);
     AddHouseToSlot(37);
     AddHouseToSlot(37);
     AddHouseToSlot(37);
