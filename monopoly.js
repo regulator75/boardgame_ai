@@ -91,7 +91,7 @@ function DrawBoard(){
 		ctx.drawImage(background,0,0,c.width, c.height) // ,c.width, c.height
 		DebugDraw(ctx);
 		DrawPlayerPieces(ctx);
-		DrawPlayerPieces
+		DrawHouses(ctx);	
 	}
 }
 
@@ -104,7 +104,7 @@ function UI_GetLocationsForSpotAndCount(spot, playercount, spacing, trans_x, tra
 
 	function spotIsVertical(s) {
 		var row = UI_GetRowForSlot(s);
-		return row==1 || row==3
+		return row==0 || row==2
 	}
 
 	var toreturn = [];
@@ -117,14 +117,14 @@ function UI_GetLocationsForSpotAndCount(spot, playercount, spacing, trans_x, tra
 	// Impl 1, cheesy
 
 	if(playercount == 1) {
-		toreturn.push({x:prop.x+prop.w/2, y:(prop.y+prop.h/2)})
+		toreturn.push({x:trans_x +prop.x+prop.w/2, y:trans_y + (prop.y+prop.h/2)})
 	} else {
 		for(i = 0 ; i < playercount ; i++) {
 			var topush = null;
 			if(spotIsVertical(spot)) {
-				topush = {x:+trans_x + prop.x+prop.w/2 + (-spread/2 + spread*(i/(playercount-1))), y:+trans_y + (prop.y+prop.h/2)};
+				topush = {x:trans_x + prop.x+prop.w/2 + (-spread/2 + spread*(i/(playercount-1))), y:trans_y + (prop.y+prop.h/2)};
 			} else {
-				topush = {x:+trans_x + prop.x+prop.w/2 , y:+trans_y + (prop.y+prop.h/2) + (-spread/2 + spread*(i/(playercount-1))) };
+				topush = {x:trans_x + prop.x+prop.w/2 , y:trans_y + (prop.y+prop.h/2) + (-spread/2 + spread*(i/(playercount-1))) };
 			}
 			toreturn.push(topush)
 		}
@@ -137,52 +137,61 @@ function DrawPlayerPieces(ctx){
 	// This algorithm looks bakwards, but its to
 	// prevent pieces from being drawn on top of 
 
-	var houseimage = new Image();
-	houseimage.src="monopoly_green_house.png"
-	houseimage.onload = function() {
-		// each other.
-		for(var i = 0 ; i < 40 ; i++) { // 40 spots on the board
-			var players_here = GetPlayersOnSpot(i);
-			var marker_locations = UI_GetLocationsForSpotAndCount(i,players_here.length,0.33, 0,0);
-			for(x = 0 ; x < players_here.length ; x++) {
-				ctx.beginPath();
-				ctx.arc(marker_locations[x].x, marker_locations[x].y, 20, 0, 2 * Math.PI, false);
-				ctx.fillStyle = players_here[x].marker_color;
-				ctx.fill();
-				ctx.lineWidth = 2;
-				ctx.strokeStyle = '#003300';
-				ctx.stroke();
-			}
+
+	// each other.
+	for(var i = 0 ; i < 40 ; i++) { // 40 spots on the board
+		var players_here = GetPlayersOnSpot(i);
+		var marker_locations = UI_GetLocationsForSpotAndCount(i,players_here.length,0.33, 0,0);
+		for(x = 0 ; x < players_here.length ; x++) {
+			ctx.beginPath();
+			ctx.arc(marker_locations[x].x, marker_locations[x].y, 20, 0, 2 * Math.PI, false);
+			ctx.fillStyle = players_here[x].marker_color;
+			ctx.fill();
+			ctx.lineWidth = 2;
+			ctx.strokeStyle = '#003300';
+			ctx.stroke();
 		}
 	}
 }
 
 function DrawHouses(ctx) {
-	for(var i = 0 ; i < 40 ; i++) { // 40 spots on the board
-		var green_houses_here = UI_GetGreenHousesAtSlot(i)
 
-		var trans_x = 0;
-		var trans_y = 0;
-		row = UI_GetRowForSlot(i);
-		switch(row) {
-			case 0: trans_y = -50; break;
-			case 1: trans_x = +50; break;
-			case 2: trans_y = +50; break;
-			case 3: trans_x = -50; break;
-		}		
-		// Cheat, use the player locatoin algorithm. Them move towards center.
-		var marker_locations = UI_GetLocationsForSpotAndCount(i,green_houses_here.length, 0.4, trans_x, trans_y);
-		
-		for(x = 0 ; x < green_houses_here.length ; x++) {
-			ctx.beginPath();
+	var house_img_size = 50
+	var house_move_from_playser
 
-			ctx.drawImage('monopoly_green_house.png')
-			ctx.arc(marker_locations[x].x, marker_locations[x].y, 20, 0, 2 * Math.PI, false);
-			ctx.fillStyle = '#00ff00';
-			ctx.fill();
-			ctx.lineWidth = 2;
-			ctx.strokeStyle = '#003300';
-			ctx.stroke();
+	var houseimage = new Image();
+	houseimage.src="monopoly_green_house.png"
+	houseimage.onload = function() {
+		for(var i = 0 ; i < 40 ; i++) { // 40 spots on the board
+			var green_houses_here = UI_GetGreenHousesAtSlot(i)
+
+			var trans_x = 0;
+			var trans_y = 0;
+			row = UI_GetRowForSlot(i);
+			switch(row) {
+				case 0: trans_y = -50; break;
+				case 1: trans_x = +50; break;
+				case 2: trans_y = +50; break;
+				case 3: trans_x = -50; break;
+			}		
+
+			trans_x -= house_img_size/2;
+			trans_y -= house_img_size/2;
+
+			// Cheat, use the player locatoin algorithm. Them move towards center.
+			var marker_locations = UI_GetLocationsForSpotAndCount(i,green_houses_here, 0.5, trans_x, trans_y);
+			
+			for(x = 0 ; x < green_houses_here ; x++) {
+				ctx.beginPath();
+
+				ctx.drawImage(houseimage,marker_locations[x].x, marker_locations[x].y,house_img_size,house_img_size)
+				//ctx.arc(marker_locations[x].x, marker_locations[x].y, 20, 0, 2 * Math.PI, false);
+				ctx.fillStyle = '#00ff00';
+				ctx.fill();
+				ctx.lineWidth = 2;
+				ctx.strokeStyle = '#003300';
+				ctx.stroke();
+			}
 		}
 	}
 }
@@ -393,6 +402,35 @@ function MakeProperties() {
     AddHouseToSlot(8);
 
     AddHouseToSlot(9);
+
+    AddHouseToSlot(16);
+    AddHouseToSlot(16);
+    AddHouseToSlot(16);
+    AddHouseToSlot(16);
+
+    AddHouseToSlot(18);
+    AddHouseToSlot(18);
+
+    AddHouseToSlot(19);   
+
+    AddHouseToSlot(26);
+    AddHouseToSlot(26);
+    AddHouseToSlot(26);
+
+    AddHouseToSlot(27);
+    AddHouseToSlot(27);
+
+    AddHouseToSlot(29);   
+
+
+    AddHouseToSlot(37);
+    AddHouseToSlot(37);
+    AddHouseToSlot(37);
+    AddHouseToSlot(37);    
+
+    AddHouseToSlot(39);           
+
+
 	// Chance-slots
 }
 
@@ -417,19 +455,28 @@ function OnLoad() {
 	players.push(MakePlayer())
 	players.push(MakePlayer())
 	players.push(MakePlayer())
+	players.push(MakePlayer())
+	players.push(MakePlayer())
 
+	players[0].marker_color = "#777777"
 	players[1].marker_color = "#ff00ff"
 	players[2].marker_color = "#ff0000"
 	players[3].marker_color = "#000000"
+	players[4].marker_color = "#00ffff"
+	players[5].marker_color = "#ffff00"
 
-	players[2].spot=15
-	players[3].spot=15
+
+	players[0].spot=0
+	players[1].spot=1	
+	players[2].spot=6
+	players[3].spot=6	
+	players[4].spot=15
+	players[5].spot=9
 
 	MakeProperties()
 
 	// Draw current board
 	CalculatePieceLocations(document.getElementById("myCanvas"));
 	DrawBoard();
-	DrawHouses();
 
 }
