@@ -24,13 +24,14 @@ function MakePlayer() {
 var all_slots = []
 
 var TYPE_LAND = 1
-var TYPE_JAIL = 2
+var TYPE_JAILVISIT = 2 // The slot you stand in when you just walk into the jail space
 var TYPE_FREEPARKING = 3
 var TYPE_GOTOJAIL = 4
 var TYPE_GO = 5
 var TYPE_CHANCE = 6
 var TYPE_COMMUNITY = 7
 var TYPE_TAX = 8 // Income tax and luxury tax
+var TYPE_JAILED = 9 // The slot type for slot #40, which is the actual jail when jailed.
 
 function MakeBuyableProperty(slot, name, price, houseprice, rent, family, rail, waterelect) {
 	prop = {
@@ -54,8 +55,11 @@ function MakeCardProperty(slot, type) {
 function MakeGoProperty(slot) {
 	MakeGenericProperty(slot,TYPE_GO)
 }
-function MakeJailProperty(slot) {
-	MakeGenericProperty(slot,TYPE_JAIL)
+function MakeVisitingJailProperty(slot) {
+	MakeGenericProperty(slot,TYPE_JAILVISIT)
+}
+function MakeInJailProperty(slot) {
+	MakeGenericProperty(slot,TYPE_JAILED)
 }
 function MakeFreeParkingProperty(slot) {
 	MakeGenericProperty(slot,TYPE_FREEPARKING)
@@ -139,7 +143,7 @@ function DrawPlayerPieces(ctx){
 
 
 	// each other.
-	for(var i = 0 ; i < 40 ; i++) { // 40 spots on the board
+	for(var i = 0 ; i < 41 ; i++) { // 40 spots on the board + 1 for the Jail
 		var players_here = GetPlayersOnSpot(i);
 		var marker_locations = UI_GetLocationsForSpotAndCount(i,players_here.length,0.33, 0,0);
 		for(x = 0 ; x < players_here.length ; x++) {
@@ -218,7 +222,7 @@ function DebugDraw(ctx) {
 	ctx.font = "30px Verdana";
 	for(p in properties) {
 		r = properties[p];
-		//ctx.rect(r.x,r.y,r.w,r.h)
+		ctx.rect(r.x,r.y,r.w,r.h)
 		ctx.fillText(""+p, r.x+r.w/2, r.y+r.h/2)
 	}
 	ctx.stroke();
@@ -263,8 +267,10 @@ function CalculatePieceLocations(c) {
     	properties.push(Rect(TOTAL_WIDTH-property_height-property_width*i1,TOTAL_HEIGHT-property_height,property_width, property_height))
     }
 
-    // Push "Jail", bottom left
-    properties.push(Rect(0,TOTAL_HEIGHT-property_height,property_height,property_height)) // property_height two times since its a corner
+    // Push "Jail", bottom left. Adjust it slightly so
+    // the visiting pieces (on slot 10) is further out than the truly jailed ones (on slot 40)
+    var jailscale = 0.7;
+    properties.push(Rect(0,TOTAL_HEIGHT-property_height*jailscale,property_height*jailscale,property_height*jailscale)) // property_height two times since its a corner
 
     // second row.
     for(var i2 = 1 ; i2 <= 9; i2++) {
@@ -287,7 +293,9 @@ function CalculatePieceLocations(c) {
         properties.push(Rect(TOTAL_WIDTH-property_height,0+property_height+property_width*(i4-1),property_height,property_width)) 
     }
 
-    // property_height two times since its a corner
+	// When you are Jailed, you are in slot 40, overlayed with the jail visit.  
+    properties.push(Rect(property_height*(1-jailscale),TOTAL_HEIGHT-property_height,property_height*jailscale,property_height*jailscale)) 
+
 
 
 }
@@ -338,7 +346,7 @@ function UI_GetRowForSlot(slot) {
 	if(slot < 10) return 0;
 	if(slot < 20) return 1;
 	if(slot < 30) return 2;
-	if(slot < 40) return 3;
+	if(slot < 41) return 3; // slot 40 is for jailed folks.
 	// Yeah yeah, this could be tighly done with one integer operation, dividing by 10 and floor,
 }
 
@@ -398,7 +406,8 @@ function MakeProperties() {
 
     // Corners
     MakeGoProperty(0)
-    MakeJailProperty(10)
+    MakeVisitingJailProperty(10)
+    MakeInJailProperty(40)  // Bonus spot. 40 is a special slot for you when you are jailed.  
     MakeFreeParkingProperty(20)
     MakeGoToJailProperty(30)
 
@@ -483,11 +492,11 @@ function OnLoad() {
 
 
 	players[0].spot=0
-	players[1].spot=1	
+	players[1].spot=40	
 	players[2].spot=6
 	players[3].spot=6	
 	players[4].spot=15
-	players[5].spot=9
+	players[5].spot=10 
 
 	MakeProperties()
 
