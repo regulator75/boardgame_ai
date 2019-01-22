@@ -17,6 +17,7 @@ simple_player_ai = {
 		// game.liftmortage(slot) - Lifts a mortage on a property.
 
 		// APIs for asking status in "game"
+		// game.slot()  - Where am I at
 		// game.money() - How much money do I have
 		// game.properties() - returns a vector of the owned properties
 		// game.players() - returns a vector of the players ID and slot as such [{index:i, slot:s}] IF s is 40 player is in jail.
