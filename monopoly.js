@@ -1,3 +1,59 @@
+
+
+//
+// Player#1 AI
+//
+simple_player_ai = {
+	act: function(game) {
+		// Repeatedly called when its your turn until you call
+		// game.rolldice()
+
+		// APIs for actions in "game"
+		// game.rolldice() - Rolls the dice, your turn is over (unless you roll two identical)
+		// game.buyhouses([slots]) - Buys one house on each property in the array. All purchases will fail if not enough funds
+		// game.sellhouses([slots]) - Sells one house on each property in the array. If sale would make house-status unlawfull all sales fail.
+		// game.playgetoutofjailcard() - Next time you roll, if you are in jail, you will get out. Can be played before getting sent to jail.
+		// game.mortage(slot) - Puts a mortage on a property.
+		// game.liftmortage(slot) - Lifts a mortage on a property.
+
+		// APIs for asking status in "game"
+		// game.money() - How much money do I have
+		// game.properties() - returns a vector of the owned properties
+		// game.players() - returns a vector of the players ID and slot as such [{index:i, slot:s}] IF s is 40 player is in jail.
+		// game.player(i) - returns information about a player
+		// game.player(i).money() - How much money do this player have
+		// game.player(i).properties() - returns a vector of the owned properties of this player
+		// game.player(i).playgetoutofjailcard() - How many get-out-of-jail cards do this player have.
+
+
+
+	},
+
+	consider_trade: function(game, bid) {
+		// Called when someone offers a trade
+	},
+
+	consider_purchase: function(game, slot) {
+		// You have landed on a piece of land 
+		// that is not owned, this is your chance to buy it
+		// Return "true" if you want to buy it.
+		// This function will not be called if you cant afford it
+	},
+
+	consider_choice: function(game, option) {
+		// Called when you pull a card where you need to make a decision.
+		// The option is from the enumeration CHOICES_X
+	}
+}
+
+
+// Function card_option should return "false" for the first option and "true" for second. 
+var CHOICES_CHANCE_OR_PAY=0
+
+
+
+
+
 //
 // Data
 //
@@ -13,11 +69,14 @@ function Rect(x,y,w,h) {
 	}
 }
 
-function MakePlayer() {
+function MakePlayer(ai) {
 	return {
 		spot: 0,
 		money: 2000,
-		marker_color: "#00ff00"
+		marker_color: "#00ff00",
+		properties: [],
+		gojcards: 0,
+		ai:ai
 	}
 }
 
@@ -33,7 +92,7 @@ var TYPE_COMMUNITY = 7
 var TYPE_TAX = 8 // Income tax and luxury tax
 var TYPE_JAILED = 9 // The slot type for slot #40, which is the actual jail when jailed.
 
-function MakeBuyableProperty(slot, name, price, houseprice, rent, family, rail, waterelect) {
+function MakeBuyableProperty(slot, name, price, houseprice, rent, family) {
 	prop = {
 		type: TYPE_LAND,
 		name: name,
@@ -41,9 +100,7 @@ function MakeBuyableProperty(slot, name, price, houseprice, rent, family, rail, 
 		houseprice: houseprice, // Cost to build one house 
 		slot: slot,
 		rent: rent, // empty, 1,2,3,4 houses, hotel
-		family: family, // brown, blue, pink etc.
-		isRailroad: false, // duh.. is this a gas-station
-		isWaterOrElectricity : waterelect,
+		family: family, // brown, blue, pink etc. "rail" means its a railroad, "company" its the electricity of waterworks.
 		houses: 0 // 5 is hotel
 	}
 	all_slots[slot] = prop;
@@ -350,51 +407,77 @@ function UI_GetRowForSlot(slot) {
 	// Yeah yeah, this could be tighly done with one integer operation, dividing by 10 and floor,
 }
 
+function UI_GeneratePlayerStatuses() {
+	// Ugly-ass HTML generation for now.
+	toreturn = "";
+	for(p in players) {
+		toreturn += "<h3>" + players[p].name + "</h3>"
+		toreturn += "Money: " + players[p].money + "<br>"
+		toreturn += "Get out of jail cards: " +players[p].gojcards + "<br>"
+		for(prop in players[p].properties) {
+			toreturn += players[p].properties[prop].name + "</br>"
+		}
+		toreturn += "<hr>"
+	}
 
+	return toreturn;
+
+}
+
+var FAMILY_BROWN     = "brown"
+var FAMILY_LIGHTBLUE = "light blue"
+var FAMILY_PINK      = "pink"
+var FAMILY_ORANGE    = "orange"
+var FAMILY_RED       = "red"
+var FAMILY_YELLOW    = "yellow"
+var FAMILY_GREEN     = "green"
+var FAMILY_ROYALBLUE = "royal blue"
+var FAMILY_RAILROAD  = "rail"
+var FAMILY_COMPANY   = "company"
 
 function MakeProperties() {
 
     // slot, name, price, houseprice, rent, family, rail, waterelect) {
     // Normal properties
-    MakeBuyableProperty(1, "Mediteraninean Avenue",  60,50,[2,10,30,90,160,250],"brown",false,false);
-    MakeBuyableProperty(3, "Baltic Avenue",          60,50,[4,20,60,180,320,450],"brown",false,false);
+    MakeBuyableProperty(1, "Mediteraninean Avenue",  60,50,[2,10,30,90,160,250],FAMILY_BROWN);
+    MakeBuyableProperty(3, "Baltic Avenue",          60,50,[4,20,60,180,320,450],FAMILY_BROWN);
 
-    MakeBuyableProperty(6, "Oriental Avenue",        100,50,[6,30,90,270,400,550],"light blue",false,false);
-    MakeBuyableProperty(8, "Vermont Avenue",         100,50,[6,30,90,270,400,550],"light blue",false,false);
-    MakeBuyableProperty(9, "Connecut Avenue",        120,50,[8,40,100,300,450,600],"light blue",false,false);
+    MakeBuyableProperty(6, "Oriental Avenue",        100,50,[6,30,90,270,400,550],FAMILY_LIGHTBLUE);
+    MakeBuyableProperty(8, "Vermont Avenue",         100,50,[6,30,90,270,400,550],FAMILY_LIGHTBLUE);
+    MakeBuyableProperty(9, "Connecut Avenue",        120,50,[8,40,100,300,450,600],FAMILY_LIGHTBLUE);
 
-    MakeBuyableProperty(11, "St. Charles Place",     140,100,[10,50,150,450,625,750],"pink",false,false);
-    MakeBuyableProperty(13, "States Avenue",         140,100,[10,50,150,450,625,750],"pink",false,false);
-    MakeBuyableProperty(14, "Virginia Avenue",       160,100,[12,60,180,500,700,900],"pink",false,false);
+    MakeBuyableProperty(11, "St. Charles Place",     140,100,[10,50,150,450,625,750],FAMILY_PINK);
+    MakeBuyableProperty(13, "States Avenue",         140,100,[10,50,150,450,625,750],FAMILY_PINK);
+    MakeBuyableProperty(14, "Virginia Avenue",       160,100,[12,60,180,500,700,900],FAMILY_PINK);
 
-    MakeBuyableProperty(16, "St. James Place",       180,100,[14,70,200,550,750,950],"orange",false,false);
-    MakeBuyableProperty(18, "Tenessee Avenue",       180,100,[14,70,200,550,750,950],"orange",false,false);
-    MakeBuyableProperty(19, "New York Avenue",       200,100,[16,80,220,600,800,1000],"orange",false,false);
+    MakeBuyableProperty(16, "St. James Place",       180,100,[14,70,200,550,750,950],FAMILY_ORANGE);
+    MakeBuyableProperty(18, "Tenessee Avenue",       180,100,[14,70,200,550,750,950],FAMILY_ORANGE);
+    MakeBuyableProperty(19, "New York Avenue",       200,100,[16,80,220,600,800,1000],FAMILY_ORANGE);
 
-    MakeBuyableProperty(21, "Kentucky Avenue",       220,150,[18,90,250,700,875,1050],"red",false,false);
-    MakeBuyableProperty(23, "Indiana Avenue",        220,150,[18,90,250,700,875,1050],"red",false,false);
-    MakeBuyableProperty(24, "Illinois Avenue",       240,150,[20,100,300,750,925,1100],"red",false,false);
+    MakeBuyableProperty(21, "Kentucky Avenue",       220,150,[18,90,250,700,875,1050],FAMILY_RED);
+    MakeBuyableProperty(23, "Indiana Avenue",        220,150,[18,90,250,700,875,1050],FAMILY_RED);
+    MakeBuyableProperty(24, "Illinois Avenue",       240,150,[20,100,300,750,925,1100],FAMILY_RED);
 
-    MakeBuyableProperty(26, "Atlantic Avenue",       260,150,[22,110,330,800,975,1150],"yellow",false,false);
-    MakeBuyableProperty(27, "Ventnor Avenue",        260,150,[22,110,330,800,975,1150],"yellow",false,false);
-    MakeBuyableProperty(29, "Marvin Gardins",        280,150,[24,120,360,850,1025,1200],"yellow",false,false);    
+    MakeBuyableProperty(26, "Atlantic Avenue",       260,150,[22,110,330,800,975,1150],FAMILY_YELLOW);
+    MakeBuyableProperty(27, "Ventnor Avenue",        260,150,[22,110,330,800,975,1150],FAMILY_YELLOW);
+    MakeBuyableProperty(29, "Marvin Gardins",        280,150,[24,120,360,850,1025,1200],FAMILY_YELLOW);    
 
-    MakeBuyableProperty(31, "Pacific Avenue",        300,200,[26,130,390,900,1100,1275],"green",false,false);
-    MakeBuyableProperty(32, "North Carolina Avenue", 300,200,[26,130,390,900,1100,1275],"green",false,false);
-    MakeBuyableProperty(34, "Pennsylvania Avenue",   320,200,[28,150,450,1000,1200,1400],"green",false,false);
+    MakeBuyableProperty(31, "Pacific Avenue",        300,200,[26,130,390,900,1100,1275],FAMILY_GREEN);
+    MakeBuyableProperty(32, "North Carolina Avenue", 300,200,[26,130,390,900,1100,1275],FAMILY_GREEN);
+    MakeBuyableProperty(34, "Pennsylvania Avenue",   320,200,[28,150,450,1000,1200,1400],FAMILY_GREEN);
 
-    MakeBuyableProperty(37, "Park Place",            350,200,[35,175,500,1100,1300,1500],"royal blue",false,false);
-    MakeBuyableProperty(39, "Boardwalk",             400,200,[50,100,200,600,1400,1700,2000],"royal blue",false,false);
+    MakeBuyableProperty(37, "Park Place",            350,200,[35,175,500,1100,1300,1500],FAMILY_ROYALBLUE);
+    MakeBuyableProperty(39, "Boardwalk",             400,200,[50,100,200,600,1400,1700,2000],FAMILY_ROYALBLUE);
 
         // Railroads
-    MakeBuyableProperty( 5, "Reading Railroad",      100,null,null,"rail",true,false);
-    MakeBuyableProperty(15, "Pennsylvania Railroad", 100,null,null,"rail",true,false);
-    MakeBuyableProperty(25, "B&O Railroad",          100,null,null,"rail",true,false);
-    MakeBuyableProperty(35, "Short Line",            100,null,null,"rail",true,false);
+    MakeBuyableProperty( 5, "Reading Railroad",      100,null,null,FAMILY_RAILROAD);
+    MakeBuyableProperty(15, "Pennsylvania Railroad", 100,null,null,FAMILY_RAILROAD);
+    MakeBuyableProperty(25, "B&O Railroad",          100,null,null,FAMILY_RAILROAD);
+    MakeBuyableProperty(35, "Short Line",            100,null,null,FAMILY_RAILROAD);
 
     // Verk
-    MakeBuyableProperty(12, "Electric company",      100,null,null,"verk",false,true);
-    MakeBuyableProperty(28, "Water works",           100,null,null,"verk",false,true);
+    MakeBuyableProperty(12, "Electric company",      100,null,null,FAMILY_COMPANY);
+    MakeBuyableProperty(28, "Water works",           100,null,null,FAMILY_COMPANY);
 
 
     MakeCardProperty(2,  TYPE_COMMUNITY)
@@ -476,12 +559,12 @@ function MakeProperties() {
 
 
 function OnLoad() {
-	players.push(MakePlayer())
-	players.push(MakePlayer())
-	players.push(MakePlayer())
-	players.push(MakePlayer())
-	players.push(MakePlayer())
-	players.push(MakePlayer())
+	players.push(MakePlayer(null))
+	players.push(MakePlayer(null))
+	players.push(MakePlayer(null))
+	players.push(MakePlayer(null))
+	players.push(MakePlayer(null))
+	players.push(MakePlayer(null))
 
 	players[0].marker_color = "#777777"
 	players[1].marker_color = "#ff00ff"
