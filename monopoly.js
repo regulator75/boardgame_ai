@@ -26,11 +26,27 @@ simple_player_ai = {
 		// game.player(i).playgetoutofjailcard() - How many get-out-of-jail cards do this player have.
 
 
-
+		// APIs for making trades
+		// game.propose_trade(player, offering, want) 
+		//   offering and want should hold the format
+		//   { slots : []   - The properties that are part of the transaction
+		//	   money : x,   - How much cash that is involved
+		//	   gojcards : x - How many get-out-of-jail cards
+		//   }
+		//   The return value is a non-zero trade id if the player accepted the trade
+		//   To make it happen you must call commit_trade.
+		//   If the trade would break a series that have houses on them the trade will 
+		//   never be offered to the other party and the return value will be 0
+		//   Trade IDs are expired when the "act" function returns.
+		// 
+		// game.commit_trade(tradeid)
 	},
 
-	consider_trade: function(game, bid) {
+	consider_trade: function(game, offering, want) {
 		// Called when someone offers a trade
+		// return true to accept the trade. Note that this is no 
+		// guarantee it will happen, the other party may still chose to 
+		// not go forward
 	},
 
 	consider_purchase: function(game, slot) {
