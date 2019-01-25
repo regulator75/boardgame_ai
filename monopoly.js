@@ -419,9 +419,9 @@ function DrawPlayerPieces(ctx){
 
 	// each other.
 	for(var i = 0 ; i < 41 ; i++) { // 40 spots on the board + 1 for the Jail
-		for(p in players) { ""+p+" " +console.log(players[p].slot) ;}
 		var players_here = GetPlayersOnSpot(i);
 		var marker_locations = UI_GetLocationsForSpotAndCount(i,players_here.length,0.33, 0,0);
+		var fsold = ctx.fillStyle
 		for(x = 0 ; x < players_here.length ; x++) {
 			ctx.beginPath();
 			ctx.arc(marker_locations[x].x, marker_locations[x].y, 20, 0, 2 * Math.PI, false);
@@ -431,6 +431,7 @@ function DrawPlayerPieces(ctx){
 			ctx.strokeStyle = '#003300';
 			ctx.stroke();
 		}
+		ctx.fillStyle = fsold
 	}
 }
 
@@ -644,7 +645,7 @@ function UI_GeneratePlayerStatuses() {
 }
 
 function GetPropertiesInFamily(f) {
-	return all_slots.filter(p => p.family = f)
+	return all_slots.filter(p => p.family == f)
 }
 
 function CountOwnedInFamily(player,f) {
