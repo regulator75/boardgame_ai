@@ -8,7 +8,8 @@ simple_player_ai = {
 		// Called when its your turn. End your turn and roll the dice by returning from this function.
 
 		// APIs for actions in "game"
-		// game.buyhouses([slots]) - Buys one house on each property in the array. All purchases will fail if not enough funds
+		// game.buyhouse([slots]) - Buys one house on each property in the array. All purchases will fail if not enough funds or if house configuration is illegal
+		// game.buyhouse(slots) - Buys one house on one property. Purchases will fail if not enough funds or if house configuration is illegal
 		// game.sellhouses([slots]) - Sells one house on each property in the array. If sale would make house-status unlawfull all sales fail.
 		// game.playgetoutofjailcard() - Next time you roll, if you are in jail, you will get out. Can be played before getting sent to jail.
 		// game.mortage(slot) - Puts a mortage on a property.
@@ -17,12 +18,22 @@ simple_player_ai = {
 		// APIs for asking status in "game"
 		// game.slot()  - Where am I at
 		// game.money() - How much money do I have
+		// game.property(slot) - return information about the property on the slot
+		// game.property([slots]) - return a vector of property information.
+		// game.set_complement(slot) -- returns the other properties that would be needed to complete the set, given this slot
 		// game.properties() - returns a vector of the owned properties
 		// game.players() - returns a vector of the players ID and slot as such [{index:i, slot:s}] IF s is 40 player is in jail.
 		// game.player(i) - returns information about a player
 		// game.player(i).money() - How much money do this player have
 		// game.player(i).properties() - returns a vector of the owned properties of this player
 		// game.player(i).playgetoutofjailcards() - How many get-out-of-jail cards do this player have.
+
+		// APIs for helping the AI determining things
+		// These are plain support function that could be implemented by the AI 
+		// itself, but it should not have to
+		// game.get_sets()
+		//   returns a vector of vectors of properties that makes up sets.
+
 
 
 		// APIs for making trades
@@ -41,7 +52,7 @@ simple_player_ai = {
 		// game.commit_trade(tradeid)
 
 		//
-		// API for getting informatoin about property
+		// API for getting information about property
 		// game.property(slot)
 		// 
 	},
@@ -105,13 +116,59 @@ function MakeGame() {
 
 		// API offered to AI
 		slot: function() { return this.current_player.slot() },
-		money: function() { return current_player.money() },
-		properties: function() { return current_player.properties() }, // TODO make deep copy.
+		money: function() { return this.current_player.money() },
+		properties: function() { return this.current_player.properties() }, // TODO make deep copy.
+		property: function(slot) { 
+			if(slot.constructor === Array) {
+				var toreturn = []
+				for(s in slot) {
+					toreturn.push(this.property(slot[s])); // recursive to deal with nested arrays.
+				}
+				return toreturn;
+			} else {
+				return all_slots[slot] // TODO make index safe.				
+			}
+		},
+
+		buyhouse: function(slot) {
+			if(slot.constructor === Array) {
+				// TODO implement this
+				null.ImNotHereYet()
+			} else {
+				p = this.property(slot)
+
+				var ownall = OwnAllInFamily(this.current_player, p.family)
+
+				var havemoney = this.money() - p.houseprice > 0
+
+				var lessthanhotel = p.houses < 5
+
+				var onmortage = p.mortaged
+
+				// This is just to make sure the AI does not do anything stupid. like build condos on the tracks
+
+				var notrailroadorcompany = (p.family != "rail" && p.family != "company")
+
+				// Check that buying a house here does not put it more than one house off compared to other properties
+				// in the family. (Lengt of vector of houses that currently have less houses than the one where you want to buy another one)
+				var houseconfigok = this.property(this.property_complements(slot)).filter(elem => elem.houses < p.houses).length == 0
+
+				if( ownall && havemoney && houseconfigok && lessthanhotel && !onmortage && notrailroadorcompany) {
+					// We are good to go!
+					this.current_player._money -= p.houseprice
+					p.houses ++
+				}
+			}
+		},
+
+		property_complements: function(slot) {
+			return GetPropertiesInFamily_Slots(all_slots[slot].family).filter(v => v!= slot)
+		},
 
 
 		playgetoutofjailcard: function() {
-			if(current_player.gojcards > 0 && this.current_player.slot() == 40 ) { // have card, is in jail.
-				current_player.gojcards--;
+			if(this.current_player.gojcards > 0 && this.current_player.slot() == 40 ) { // have card, is in jail.
+				this.current_player.gojcards--;
 				_gotoslot(10);
 			}
 		},
@@ -236,6 +293,21 @@ function MakeGame() {
 		},
 
 
+		get_sets: function() {
+			//
+			// returns a vector of slots that are complete sets. So for example, if the AI
+			// owns the first, second and last set on the board, the return value 
+			// would be [[1,3],[6,7,8],[37,39]]
+			var toreturn = []
+			var ownedfamilies = GetAllFamiliesOfBuildablePropertiesOwned(this.current_player)
+			for(f in ownedfamilies) {
+				if( OwnAllInFamily(this.current_player,ownedfamilies[f])) {
+					toreturn.push(GetPropertiesInFamily_Slots(ownedfamilies[f]))
+				}
+			}
+			return toreturn
+		}
+
 
 
 
@@ -319,6 +391,7 @@ function MakeBuyableProperty(slot, name, price, houseprice, rent, family) {
 		rent: rent, // empty, 1,2,3,4 houses, hotel
 		family: family, // brown, blue, pink etc. "rail" means its a railroad, "company" its the electricity of waterworks.
 		houses: 0, // 5 is hotel
+		mortaged : false, // Is the house under mortage?
 		owner: null
 	}
 	all_slots[slot] = prop;
@@ -581,28 +654,6 @@ function CalculatePieceLocations(c) {
 // House management
 //
 
-function AddHouseToSlot(slot) {
-	// First, make sure its buildable
-	if(all_slots[slot].type != TYPE_LAND || all_slots[slot].houses == 5) {
-		// Cant build here.
-		return false;
-	} else {
-		// OPTIONAL RULE IN FUTURE: Limit the number of houses that can co-exist onboard.
-		all_slots[slot].houses += 1
-		return true;
-	}
-}
-
-function RemoveHouseFromSlot(slot) {
-	if(all_slots[slot].type != TYPE_LAND || all_slots[slot].houses == 0) {
-		// Cant build here.
-		return false;
-	} else {
-		all_slots[slot].houses -= 1
-		return true;
-	}
-}
-
 function UI_GetGreenHousesAtSlot(slot) {
 	if(all_slots[slot].type != TYPE_LAND || all_slots[slot].houses == 5) { // 5 is hotel
 		return 0;
@@ -648,9 +699,32 @@ function GetPropertiesInFamily(f) {
 	return all_slots.filter(p => p.family == f)
 }
 
+function GetPropertiesInFamily_Slots(f) {
+	return all_slots.reduce(
+		function(acc, prop, idx){
+			if(prop.family==f){
+				acc.push(idx)
+			}
+			return acc
+		},[])
+}
+
 function CountOwnedInFamily(player,f) {
 	return GetPropertiesInFamily(f).filter(p => p.owner == player)
 }
+
+function OwnAllInFamily(owner, family) {
+	var propsnotowned = GetPropertiesInFamily(family).filter(function(p){return p.owner != owner})
+	return propsnotowned.length == 0
+}
+
+function GetAllFamiliesOfBuildablePropertiesOwned(owner) {
+	v_needs_map = all_slots.filter(function(f){return f.owner == owner && f.family != "rail" && f.family!="company";})
+	v = v_needs_map.map(function(f){return f.family})
+	x = [...new Set(v)]
+	return x;
+}
+
 
 
 // Assumes
@@ -682,7 +756,7 @@ function CalculateRent(slot) {
 			rent = p.rent[p.houses]
 		}
 		// No building, but maybe same owner for everythign in the family?
-		else if(CountOwnedInFamily(p.owner,p.family).length == GetPropertiesInFamily(p.family).length) {
+		else if(OwnAllInFamily(p.owner, p.family) ) {
 			// same owner, double the price
 			rent = p.rent[0] * 2
 		} else {
@@ -790,6 +864,22 @@ function MakeProperties() {
 
 naive_ai = {
 	turn: function(game) {
+		// Can I build on any property?
+
+		// Algorithm. Flatten the array of properties, build backwards on each property
+		// while we can afford it.
+
+		var props_to_build_on = game.property(game.get_sets())
+		
+		const flatten = (ary) => ary.reduce((a, b) => a.concat(Array.isArray(b) ? flatten(b) : b), []) // https://stackoverflow.com/questions/27266550/how-to-flatten-nested-array-in-javascript
+
+		flat_props = flatten(props_to_build_on).reverse()
+
+		for(pi in flat_props) {
+			if(flat_props[pi].houseprice < game.money()*0.75) {
+				game.buyhouse(flat_props[pi].slot)
+			}
+		}
 
 	},
 
