@@ -267,14 +267,20 @@ function MakeGame() {
 				if(this.current_player._money < rent) {
 					// Player need to raise money
 
-					this.current_player.raise_money(this, rent - this.current_player._money)
+					this.current_player.ai.raise_money(this, rent - this.current_player._money)
 
 					// If the player could not raise the money, out of business.
 					if(this.current_player._money < rent) {
 						// BANKRUPT!
 						if(recieving_player != null)
-							recieving_player._money += current_player._money; // Gets all his cash
+							recieving_player._money += this.current_player._money; // Gets all his cash
 						this.current_player._money -= rent; // Should land in negative territory
+
+						//
+						// Remove the player from the board
+						//
+						this._remove_bancruptsy_players()
+
 					} else {
 						// Player recovered
 						if(recieving_player != null)
@@ -292,6 +298,21 @@ function MakeGame() {
 			}
 		},
 
+		_remove_bancruptsy_players: function() {
+			removeus = players.filter(function(p) { return p._money < 0 })
+			for(s in all_slots) {
+				if(removeus.includes(all_slots[s].owner)) {
+					// Any owned properties goes back to the bank, that
+					// means they should be freed of houses etc.
+					all_slots[s].owner = null
+					all_slots[s].houses = 0; // why they would leave hosues is a mystery
+					all_slots[s].mortaged = false; // TODO check rules on this
+				}
+					
+			}
+
+			players = players.filter(function(p) { return p._money >=0 })			
+		},
 
 		get_sets: function() {
 			//
@@ -566,16 +587,24 @@ function DrawHouses(ctx) {
 
 
 function DebugDraw(ctx) {
-	ctx.beginPath();
-	ctx.lineWidth = "6";
-	ctx.strokeStyle = "red";
-	ctx.font = "30px Verdana";
+
 	for(p in properties) {
+		ctx.beginPath();
+		ctx.lineWidth = "6";
+		ctx.strokeStyle = "red";
+		ctx.font = "30px Verdana";
 		r = properties[p];
-		ctx.rect(r.x,r.y,r.w,r.h)
+		if(all_slots[p].owner) {
+			ctx.strokeStyle = all_slots[p].owner.marker_color
+			ctx.rect(r.x,r.y,r.w,r.h)
+		} else {
+			ctx.strokeStyle = "gray"
+		}
+
 		ctx.fillText(""+p, r.x+r.w/2, r.y+r.h/2)
+		ctx.stroke();	
 	}
-	ctx.stroke();
+
 }
 
 function CalculatePieceLocations(c) {
