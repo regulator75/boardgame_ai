@@ -18,6 +18,7 @@ simple_player_ai = {
 		// APIs for asking status in "game"
 		// game.slot()  - Where am I at
 		// game.money() - How much money do I have
+		// game.injail() - Am I in jail?
 		// game.property(slot) - return information about the property on the slot
 		// game.property([slots]) - return a vector of property information.
 		// game.set_complement(slot) -- returns the other properties that would be needed to complete the set, given this slot
@@ -130,6 +131,8 @@ function MakeGame() {
 			}
 		},
 
+		injail: function() { return this.slot() == 40},
+
 		buyhouse: function(slot) {
 			if(slot.constructor === Array) {
 				// TODO implement this
@@ -167,8 +170,8 @@ function MakeGame() {
 
 
 		playgetoutofjailcard: function() {
-			if(this.current_player.gojcards > 0 && this.current_player.slot() == 40 ) { // have card, is in jail.
-				this.current_player.gojcards--;
+			if(this.current_player._gojcards > 0 && this.current_player.slot() == 40 ) { // have card, is in jail.
+				this.current_player._gojcards--;
 				_gotoslot(10);
 			}
 		},
@@ -624,7 +627,21 @@ function MakeProperties() {
 
 naive_ai = {
 	turn: function(game) {
+
+		//
+		// Am I in Jail? If so, can I get out?
+		//
+		if(game.injail()) {
+			game.playgetoutofjailcard()
+		}
+
+		//
+		// Should I free up properties that I have mortaged?
+		//
+
+		//
 		// Can I build on any property?
+		//
 
 		// Algorithm. Flatten the array of properties, build backwards on each property
 		// while we can afford it.
