@@ -30,12 +30,19 @@ simple_player_ai = {
 		// game.player(i).money() - How much money do this player have
 		// game.player(i).properties() - returns a vector of the owned properties of this player
 		// game.player(i).getoutofjailcards() - How many get-out-of-jail cards do this player have.
+		// game.player(i).get_properties_missing_from_sets() - what properties would give this AI an monopoly
 
 		// APIs for helping the AI determining things
 		// These are plain support function that could be implemented by the AI 
 		// itself, but it should not have to
 		// game.get_sets()
 		//   returns a vector of vectors of properties that makes up sets.
+		//
+		// game.get_properties_missing_from_sets()
+		//   returns a vector of vectors of properties that if aquired makes a set
+		//   Note that this list of propertis are NOT owned by the AI at this time.
+		//
+
 
 
 
@@ -334,11 +341,23 @@ function MakeGame() {
 			}
 			return toreturn
 		},
+		
+		get_properties_missing_from_sets : function() {
+			return this.current_player.get_properties_missing_from_sets()
+		},
 
 		paytogetoutjail: function() {
 			if(this.injail() && this.current_player.money() >= 50) {
 				this.current_player._money -= 50
 				this._gotoslot(10)
+			}
+		},
+
+		player: function(p) { 
+			if(isNaN(p)) {
+				return p
+			} else {
+				return players[p]
 			}
 		}
 	}
@@ -394,7 +413,20 @@ function MakePlayer(ai) {
 		money:       function() { return this._money },
 		slot:        function() { return this._slot  },
 		properties:  function() { return all_slots.filter(property => property.owner == this) },
-		getoutofjailcards:    function() { return this._gojcards  }
+		getoutofjailcards:    function() { return this._gojcards  },
+		get_properties_missing_from_sets: function() { 
+			var toreturn = []
+			var ownedfamilies = GetAllFamiliesOfBuildablePropertiesOwned(this)
+			for(f in ownedfamilies) {
+				if( OwnAllInFamilyExceptOne(this,ownedfamilies[f])) {
+					var allPropsInFamily = GetPropertiesInFamily(ownedfamilies[f])
+					var notOwnedPropInFamily = allPropsInFamily.filter(p => p.owner != this)
+					var slot_not_owned = notOwnedPropInFamily[0].slot
+					toreturn.push(slot_not_owned)
+				}
+			}
+			return toreturn			
+		}
 
 	}
 }
@@ -486,6 +518,12 @@ function OwnAllInFamily(owner, family) {
 	var propsnotowned = GetPropertiesInFamily(family).filter(function(p){return p.owner != owner})
 	return propsnotowned.length == 0
 }
+
+function OwnAllInFamilyExceptOne(owner, family) {
+	var propsnotowned = GetPropertiesInFamily(family).filter(function(p){return p.owner != owner})
+	return propsnotowned.length == 1	
+}
+
 
 function GetAllFamiliesOfBuildablePropertiesOwned(owner) {
 	v_needs_map = all_slots.filter(function(f){return f.owner == owner && f.family != "rail" && f.family!="company";})
@@ -633,6 +671,8 @@ function MakeProperties() {
 
 naive_ai = {
 	turn: function(game) {
+		const flatten = (ary) => ary.reduce((a, b) => a.concat(Array.isArray(b) ? flatten(b) : b), []) // https://stackoverflow.com/questions/27266550/how-to-flatten-nested-array-in-javascript
+
 
 		//
 		// Am I in Jail? If so, can I get out?
@@ -651,6 +691,22 @@ naive_ai = {
 		// Should I free up properties that I have mortaged?
 		//
 
+
+
+		//
+		// Can I make a trade?
+		// 
+
+		// For each pair i have, se if someone wants to sell me the last one
+		var props_to_buy = game.get_properties_missing_from_sets()
+		for(pi in props_to_buy) {
+			p = game.property(props_to_buy[pi])
+			if(p.owner) {
+				// propose a trade
+				what_it_want = game.player(p.owner)
+
+			}
+		}
 		//
 		// Can I build on any property?
 		//
@@ -660,7 +716,6 @@ naive_ai = {
 
 		var props_to_build_on = game.property(game.get_sets())
 		
-		const flatten = (ary) => ary.reduce((a, b) => a.concat(Array.isArray(b) ? flatten(b) : b), []) // https://stackoverflow.com/questions/27266550/how-to-flatten-nested-array-in-javascript
 
 		flat_props = flatten(props_to_build_on).reverse()
 
