@@ -12,12 +12,14 @@ simple_player_ai = {
 		// game.buyhouse(slots) - Buys one house on one property. Purchases will fail if not enough funds or if house configuration is illegal
 		// game.sellhouses([slots]) - Sells one house on each property in the array. If sale would make house-status unlawfull all sales fail.
 		// game.playgetoutofjailcard() - Next time you roll, if you are in jail, you will get out. Can be played before getting sent to jail.
+		// game.paytogetoutjail() - Pay money to get out of jail 
 		// game.mortage(slot) - Puts a mortage on a property.
 		// game.liftmortage(slot) - Lifts a mortage on a property.
 
 		// APIs for asking status in "game"
 		// game.slot()  - Where am I at
 		// game.money() - How much money do I have
+		// game.getoutofjailcards() - How many "Get out of jail"  do I have
 		// game.injail() - Am I in jail?
 		// game.property(slot) - return information about the property on the slot
 		// game.property([slots]) - return a vector of property information.
@@ -27,7 +29,7 @@ simple_player_ai = {
 		// game.player(i) - returns information about a player
 		// game.player(i).money() - How much money do this player have
 		// game.player(i).properties() - returns a vector of the owned properties of this player
-		// game.player(i).playgetoutofjailcards() - How many get-out-of-jail cards do this player have.
+		// game.player(i).getoutofjailcards() - How many get-out-of-jail cards do this player have.
 
 		// APIs for helping the AI determining things
 		// These are plain support function that could be implemented by the AI 
@@ -132,6 +134,7 @@ function MakeGame() {
 		},
 
 		injail: function() { return this.slot() == 40},
+		getoutofjailcards: function() { return this._gojcards },
 
 		buyhouse: function(slot) {
 			if(slot.constructor === Array) {
@@ -330,11 +333,14 @@ function MakeGame() {
 				}
 			}
 			return toreturn
+		},
+
+		paytogetoutjail: function() {
+			if(this.injail() && this.current_player.money() >= 50) {
+				this.current_player._money -= 50
+				this._gotoslot(10)
+			}
 		}
-
-
-
-
 	}
 }
 
@@ -388,7 +394,7 @@ function MakePlayer(ai) {
 		money:       function() { return this._money },
 		slot:        function() { return this._slot  },
 		properties:  function() { return all_slots.filter(property => property.owner == this) },
-		playgetoutofjailcards:    function() { return this._gojcards  }
+		getoutofjailcards:    function() { return this._gojcards  }
 
 	}
 }
@@ -632,7 +638,13 @@ naive_ai = {
 		// Am I in Jail? If so, can I get out?
 		//
 		if(game.injail()) {
-			game.playgetoutofjailcard()
+			// Can I get out using a card?
+			if(game.getoutofjailcards() > 0)
+				game.playgetoutofjailcard()
+			// Can I get out using Money? (Do I?)
+			else if(game.money() > 200) {
+				game.paytogetoutjail()
+			}
 		}
 
 		//
