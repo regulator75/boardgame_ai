@@ -762,7 +762,8 @@ function runner() {
 		window.clearInterval(interval)
 		interval = null
 	}
-	DrawBoard();
+	UI_DrawBoard();
+	UI_DrawPlayerStats()
 
 }
 function OnLoad() {
@@ -777,9 +778,9 @@ function OnLoad() {
 
 	// Draw current board
 	CalculatePieceLocations(document.getElementById("myCanvas"));
-	//CreateDIVsForPlayers()
-	DrawBoard();
-	//DrawPlayerStats()
+	UI_CreateDIVsForPlayers()
+	UI_DrawBoard();
+	UI_DrawPlayerStats()
 
 	//runner();
 	interval = window.setInterval(function(){runner()}, 50);

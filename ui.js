@@ -1,4 +1,4 @@
-function DrawBoard(){
+function UI_DrawBoard(){
 	var c = document.getElementById("myCanvas");
 	var ctx = c.getContext("2d");
 	ctx.clearRect(0, 0, c.width, c.height);
@@ -268,6 +268,54 @@ function CalculatePieceLocations(c) {
 
 }
 
-//function CreateDivsForPlayers
+function PlayerDivname(p) {
+	return p.marker_color
+}
+
+var TEMPLATE = `
+<div id=\"PLAYERNAME\" >
+Money: <div id=\"PLAYERNAME_money\"> </div><br>
+GOJ cards:<div id=\"PLAYERNAME_gojcards\"> </div><br>
+Properties:<br><div id=\"PLAYERNAME_properties\"> </div>
+</div><br><hr>`;
 
 
+
+function UI_CreateDIVsForPlayers() {
+	players_div = document.getElementById("players")
+	for(pi in players) {
+		var addthis = TEMPLATE.replace(/PLAYERNAME/g,PlayerDivname(players[pi]))
+		players_div.innerHTML += addthis
+	}
+}
+
+function UI_DrawPlayerStats() {
+
+	for(var pi in players) {
+		pl = players[pi]
+		UI_UpdatePlayerMoney(pl)
+		UI_UpdatePlayerProperties(pl)
+		UI_UpdatePlayerGOJcards(pl)
+	}
+}
+
+function UI_UpdatePlayerMoney(p) {
+	var elem = document.getElementById(PlayerDivname(p) + "_money")
+	elem.innerHTML = p.money()
+}
+
+function UI_UpdatePlayerProperties(p) {
+	var elem = document.getElementById(PlayerDivname(p) + "_properties")
+	var htmlToSet = ""
+	props = p.properties()
+	for(pi in props) {
+		htmlToSet += props[pi].name + "<br>"
+	}
+	elem.innerHTML = htmlToSet
+
+}
+
+function UI_UpdatePlayerGOJcards(p) {
+	var elem = document.getElementById(PlayerDivname(p) + "_gojcards")
+	elem.innerHTML = p.getoutofjailcards()
+}
