@@ -104,6 +104,9 @@ function tick() {
 	player = players[next_player]
 
 	game.set_active_player(player)
+	if(!player || !player.ai ) {
+		var breakme=null
+	}
 	player.ai.turn(game)
 	game.expunge_trade_records() // dont leave lingering trades
 	var last = double_rolls_so_far == 2;
@@ -116,7 +119,7 @@ function tick() {
 		double_rolls_so_far = 0;
 	}
 
-	return true;
+	return players.length > 1; // Stop if someone won
 }
 
 function MakeGame() {
@@ -743,28 +746,24 @@ naive_ai = {
 		// Just fail..
 	}
 }
+
+
+				
+var interval = null
 function runner() {
 
-	var runFast = false;//document.getElementById("fastrun").checked
-	var keepOnRunning = true;//document.getElementById("autorun").checked
 
-	if( tick() ) {	
-		
-		if(keepOnRunning) {		
-			var delayToNextFrame;
-			if(runFast) {
-				delayToNextFrame = 10;
-			} else {
-				delayToNextFrame = 50
-			}
-			window.setTimeout(runner, delayToNextFrame);
-		}
+
+	if( tick() ) {
+		//var keepOnRunning = true;//document.getElementById("autorun").checked	
+		//var runFast = false;//document.getElementById("fastrun").checked
 	} else {
 		// Game over. Restart
-		//ResetStateAndLoadRobots();
-		//runner();
+		window.clearInterval(interval)
+		interval = null
 	}
 	DrawBoard();
+
 }
 function OnLoad() {
 
@@ -778,10 +777,12 @@ function OnLoad() {
 
 	// Draw current board
 	CalculatePieceLocations(document.getElementById("myCanvas"));
+	//CreateDIVsForPlayers()
 	DrawBoard();
+	//DrawPlayerStats()
 
-	runner();
-
+	//runner();
+	interval = window.setInterval(function(){runner()}, 50);
 
 
 }

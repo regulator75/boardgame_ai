@@ -268,4 +268,6 @@ function CalculatePieceLocations(c) {
 
 }
 
+//function CreateDivsForPlayers
+
 
