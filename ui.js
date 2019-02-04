@@ -54,15 +54,15 @@ function UI_GetLocationsForSpotAndCount(spot, playercount, spacing, trans_x, tra
 
 
 function UI_GetGreenHousesAtSlot(slot) {
-	if(all_slots[slot].type != TYPE_LAND || all_slots[slot].houses == 5) { // 5 is hotel
+	if(all_slots[slot].type != TYPE_LAND || all_slots[slot].houses() == 5) { // 5 is hotel
 		return 0;
 	} else {
-		return all_slots[slot].houses
+		return all_slots[slot].houses()
 	}
 }
 
 function UI_GetHotelsAtSlot(slot) {
-	if(all_slots[slot].type != TYPE_LAND || all_slots[slot].houses != 5) { // 5 is hotel
+	if(all_slots[slot].type != TYPE_LAND || all_slots[slot].houses() != 5) { // 5 is hotel
 		return 0;
 	} else {
 		return 1; // Five houses == i hotel
@@ -102,8 +102,8 @@ function DebugDraw(ctx) {
 		ctx.strokeStyle = "red";
 		ctx.font = "30px Verdana";
 		r = properties[p];
-		if(all_slots[p].owner) {
-			ctx.strokeStyle = all_slots[p].owner.marker_color
+		if(all_slots[p]._owner) { // Not all properties are owneable..
+			ctx.strokeStyle = all_slots[p].owner().marker_color
 			ctx.rect(r.x,r.y,r.w,r.h)
 		} else {
 			ctx.strokeStyle = "gray"

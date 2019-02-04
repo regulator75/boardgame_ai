@@ -165,7 +165,7 @@ function MakeGame() {
 
 				var lessthanhotel = p.houses() < 5
 
-				var onmortage = p.mortaged
+				var onmortage = p.mortaged()
 
 				// This is just to make sure the AI does not do anything stupid. like build condos on the tracks
 
@@ -199,6 +199,7 @@ function MakeGame() {
 		trades_offered : [],
 		_create_trade_record : function(other_player, offer,want) {
 			this.trades_offered.push({player:other_player, offer: offer, want: want, valid: true})
+			return this.trades_offered.length // Trade ID is simply vector index + 1
 		},
 		expunge_trade_records : function() {
 			this.trades_offered.forEach(function(t){t.valid = false}) // Make them invalid incase someone will try to exeecute them later.
@@ -242,17 +243,17 @@ function MakeGame() {
 			switch(all_slots[slot].type) {
 				case TYPE_LAND:
 					// Check if we need to pay
-					if(prop.owner != null && prop.owner != this.current_player) {
-						recieving_player = prop.owner 
+					if(prop.owner() != null && prop.owner() != this.current_player) {
+						recieving_player = prop.owner() 
 						// Need to pay...
 						rent = CalculateRent(slot)
-					} else if(prop.owner == null) {
+					} else if(prop.owner() == null) {
 						// No-one ownes this slot, lets see if the AI wants to buy it
 						want_to_buy = this.current_player.ai.consider_purchase(this, slot)
 
 						if(want_to_buy && prop.price() <= this.current_player._money) {
 							// Its a DEAL!
-							prop.owner = this.current_player
+							prop._owner = this.current_player
 							this.current_player._money -= prop.price()
 						}
 					}
@@ -323,12 +324,12 @@ function MakeGame() {
 		_remove_bancruptsy_players: function() {
 			removeus = players.filter(function(p) { return p._money < 0 })
 			for(s in all_slots) {
-				if(removeus.includes(all_slots[s].owner)) {
+				if(removeus.includes(all_slots[s]._owner)) {
 					// Any owned properties goes back to the bank, that
 					// means they should be freed of houses etc.
-					all_slots[s].owner = null
-					all_slots[s].houses() = 0; // why they would leave hosues is a mystery
-					all_slots[s].mortaged = false; // TODO check rules on this
+					all_slots[s]._owner = null
+					all_slots[s]._houses = 0; // why they would leave hosues is a mystery
+					all_slots[s]._mortaged = false; // TODO check rules on this
 				}
 					
 			}
@@ -367,6 +368,73 @@ function MakeGame() {
 				return p
 			} else {
 				return players[p]
+			}
+		},
+
+
+		_checkAssets: function(player, assets) {
+			var moneyOk = player.money() >= assets.money
+			var gojcardsOk = player.getoutofjailcards() >= assets.gojcards
+
+			// this would be cleaner with reduce
+			var props = player.properties()
+			var filtered = props.filter(p => assets.slots.indexOf(p.slot) != -1)
+			var slotsOk = filtered.length == assets.slots.length
+
+			// Now, check if any assets transfered would break a monopoly that
+			// have houses.
+			// TODO
+
+			return moneyOk && gojcardsOk && slotsOk
+		},
+
+
+		propose_trade: function(player, offering, want ) {
+			// Step 0, round of any decimals in offerings.
+			offering.money = Math.round(offering.money)
+			want.money = Math.round(want.money)
+
+			// Step 1, make sure both players can give up what is offered/asked
+		
+			if(! this._checkAssets(this.current_player, offering) || !this._checkAssets(player,want)) {
+				// Trade cant happen anyway
+				tradeid = 0
+			} else {
+				var tradeid = 0
+				if( player.ai.consider_trade(this, offering, want) ) {
+					tradeid = this._create_trade_record(player, offering, want)
+				}
+			}
+			return tradeid
+		},
+		commit_trade: function(tradeid) {
+			// Must re-validate that trade can happen, player may have done other stuff between offer and commit
+			trade = this.trades_offered[tradeid-1]
+			if(trade.valid && this._checkAssets(this.current_player, trade.offer) && this._checkAssets(trade.player, trade.want)) {
+				// Actually move stuff
+
+				// $$
+				this.current_player._money += trade.want.money
+				trade.player._money -= trade.want.money
+				this.current_player._money -= trade.offer.money
+				trade.player._money += trade.offer.money
+
+				// GOJ
+				this.current_player._gojcards += trade.want.gojcards
+				trade.player._gojcards -= trade.want.gojcards
+				this.current_player._gojcards -= trade.offer.gojcards
+				trade.player._gojcards += trade.offer.gojcards
+
+				// Properties
+				for(i in trade.offer.slots ) {
+					game.property(trade.offer.slots[i])._owner = trade.player
+				}
+				for(i in trade.want.slots ) {
+					game.property(trade.want.slots[i])._owner = this.current_player
+				}
+
+				// Flag as done
+				trade.valid = false
 			}
 		}
 	}
@@ -421,7 +489,7 @@ function MakePlayer(ai) {
 		ai:ai,
 		money:       function() { return this._money },
 		slot:        function() { return this._slot  },
-		properties:  function() { return all_slots.filter(property => property.owner == this) },
+		properties:  function() { return all_slots.filter(property => property._owner == this) },
 		getoutofjailcards:    function() { return this._gojcards  },
 		get_properties_missing_from_sets: function() { 
 			var toreturn = []
@@ -429,7 +497,7 @@ function MakePlayer(ai) {
 			for(f in ownedfamilies) {
 				if( OwnAllInFamilyExceptOne(this,ownedfamilies[f])) {
 					var allPropsInFamily = GetPropertiesInFamily(ownedfamilies[f])
-					var notOwnedPropInFamily = allPropsInFamily.filter(p => p.owner != this)
+					var notOwnedPropInFamily = allPropsInFamily.filter(p => p.owner() != this)
 					var slot_not_owned = notOwnedPropInFamily[0].slot
 					toreturn.push(slot_not_owned)
 				}
@@ -526,22 +594,22 @@ function GetPropertiesInFamily_Slots(f) {
 }
 
 function CountOwnedInFamily(player,f) {
-	return GetPropertiesInFamily(f).filter(p => p.owner == player)
+	return GetPropertiesInFamily(f).filter(p => p.owner() == player)
 }
 
 function OwnAllInFamily(owner, family) {
-	var propsnotowned = GetPropertiesInFamily(family).filter(function(p){return p.owner != owner})
+	var propsnotowned = GetPropertiesInFamily(family).filter(function(p){return p.owner() != owner})
 	return propsnotowned.length == 0
 }
 
 function OwnAllInFamilyExceptOne(owner, family) {
-	var propsnotowned = GetPropertiesInFamily(family).filter(function(p){return p.owner != owner})
+	var propsnotowned = GetPropertiesInFamily(family).filter(function(p){return p.owner() != owner})
 	return propsnotowned.length == 1	
 }
 
 
 function GetAllFamiliesOfBuildablePropertiesOwned(owner) {
-	v_needs_map = all_slots.filter(function(f){return f.owner == owner && f.family != "rail" && f.family!="company";})
+	v_needs_map = all_slots.filter(function(f){return f._owner == owner && f.family != "rail" && f.family!="company";})
 	v = v_needs_map.map(function(f){return f.family})
 	x = [...new Set(v)]
 	return x;
@@ -561,13 +629,13 @@ function CalculateRent(slot) {
 	if(p.family == FAMILY_RAILROAD) {
 		// Depending on how many railroads the same player owns
 		// the rent is different.
-		cnt = CountOwnedInFamily(p.owner,FAMILY_RAILROAD)
+		cnt = CountOwnedInFamily(p.owner(),FAMILY_RAILROAD)
 		rent = p.rent[cnt]; //
 
 	} else if(p.family == FAMILY_COMPANY) {
 		// If one propertiy is owned, 
 		dices = RollDice() + RollDice() // TODO this is not supposed to be a re-roll, the last rolled dice is what should be used.
-		cnt = CountOwnedInFamily(p.owner,FAMILY_COMPANY)
+		cnt = CountOwnedInFamily(p.owner(),FAMILY_COMPANY)
 		rent = p.rent[cnt-1] * dices
 	} else {
 
@@ -578,7 +646,7 @@ function CalculateRent(slot) {
 			rent = p.rent[p.houses()]
 		}
 		// No building, but maybe same owner for everythign in the family?
-		else if(OwnAllInFamily(p.owner, p.family) ) {
+		else if(OwnAllInFamily(p.owner(), p.family) ) {
 			// same owner, double the price
 			rent = p.rent[0] * 2
 		} else {
@@ -716,13 +784,17 @@ naive_ai = {
 		var props_to_buy = game.get_properties_missing_from_sets()
 		for(pi in props_to_buy) {
 			p = game.property(props_to_buy[pi])
-			if(p.owner) {
+			if(p.owner()) {
 				// propose a trade
-				other_player = game.player(p.owner)
-				//i = game.propose_trade(
-				//	other_player,
-				//	{slots:[], money:game.money()*0.8, gojcards:0}
-				//	{slots:[p.slot], money:0, gojcards:0})
+				other_player = game.player(p.owner())
+				var trade_id = game.propose_trade(
+					other_player,
+					{slots:[], money:game.money()*0.8, gojcards:0},
+					{slots:[p.slot], money:0, gojcards:0})
+
+				if(trade_id) {
+					game.commit_trade(trade_id)
+				}
 
 
 		//   { slots : []   - The properties that are part of the transaction
