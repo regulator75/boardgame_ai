@@ -22,6 +22,12 @@ simple_player_ai = {
 		// game.getoutofjailcards() - How many "Get out of jail"  do I have
 		// game.injail() - Am I in jail?
 		// game.property(slot) - return information about the property on the slot
+		// game.property(slot).owner() - returns the player who owns the object
+		// game.property(slot).price() - Price to buy the property
+		// game.property(slot).mortaged() - Is there a mortage on the property
+		// game.property(slot).houseprice() - How much is the price of a houses
+		// game.property(slot).houses()
+		// game.property(slot).slot() - returns the slot of the property
 		// game.property([slots]) - return a vector of property information.
 		// game.set_complement(slot) -- returns the other properties that would be needed to complete the set, given this slot
 		// game.properties() - returns a vector of the owned properties
@@ -155,9 +161,9 @@ function MakeGame() {
 
 				var ownall = OwnAllInFamily(this.current_player, p.family)
 
-				var havemoney = this.money() - p.houseprice > 0
+				var havemoney = this.money() - p.houseprice() > 0
 
-				var lessthanhotel = p.houses < 5
+				var lessthanhotel = p.houses() < 5
 
 				var onmortage = p.mortaged
 
@@ -167,12 +173,12 @@ function MakeGame() {
 
 				// Check that buying a house here does not put it more than one house off compared to other properties
 				// in the family. (Lengt of vector of houses that currently have less houses than the one where you want to buy another one)
-				var houseconfigok = this.property(this.property_complements(slot)).filter(elem => elem.houses < p.houses).length == 0
+				var houseconfigok = this.property(this.property_complements(slot)).filter(elem => elem.houses() < p.houses()).length == 0
 
 				if( ownall && havemoney && houseconfigok && lessthanhotel && !onmortage && notrailroadorcompany) {
 					// We are good to go!
-					this.current_player._money -= p.houseprice
-					p.houses ++
+					this.current_player._money -= p.houseprice()
+					p._houses ++
 				}
 			}
 		},
@@ -244,10 +250,10 @@ function MakeGame() {
 						// No-one ownes this slot, lets see if the AI wants to buy it
 						want_to_buy = this.current_player.ai.consider_purchase(this, slot)
 
-						if(want_to_buy && prop.price <= this.current_player._money) {
+						if(want_to_buy && prop.price() <= this.current_player._money) {
 							// Its a DEAL!
 							prop.owner = this.current_player
-							this.current_player._money -= prop.price
+							this.current_player._money -= prop.price()
 						}
 					}
 					break;
@@ -321,7 +327,7 @@ function MakeGame() {
 					// Any owned properties goes back to the bank, that
 					// means they should be freed of houses etc.
 					all_slots[s].owner = null
-					all_slots[s].houses = 0; // why they would leave hosues is a mystery
+					all_slots[s].houses() = 0; // why they would leave hosues is a mystery
 					all_slots[s].mortaged = false; // TODO check rules on this
 				}
 					
@@ -450,14 +456,20 @@ function MakeBuyableProperty(slot, name, price, houseprice, rent, family) {
 	prop = {
 		type: TYPE_LAND,
 		name: name,
-		price: price,
-		houseprice: houseprice, // Cost to build one house 
+		_price: price,
+		_houseprice: houseprice, // Cost to build one house 
 		slot: slot,
 		rent: rent, // empty, 1,2,3,4 houses, hotel
 		family: family, // brown, blue, pink etc. "rail" means its a railroad, "company" its the electricity of waterworks.
-		houses: 0, // 5 is hotel
-		mortaged : false, // Is the house under mortage?
-		owner: null
+		_houses: 0, // 5 is hotel
+		_mortaged : false, // Is the house under mortage?
+		_owner: null,
+		houseprice : function(){return this._houseprice},
+		houses :     function(){return this._houses},
+		mortaged:    function(){return this._mortaged},
+		owner:       function(){return this._owner},
+		price:       function(){return this._price}
+
 	}
 	all_slots[slot] = prop;
 }
@@ -562,8 +574,8 @@ function CalculateRent(slot) {
 		// Plain old property
 
 		// is there any buildings on the slot?
-		if(p.houses > 0) {
-			rent = p.rent[p.houses]
+		if(p.houses() > 0) {
+			rent = p.rent[p.houses()]
 		}
 		// No building, but maybe same owner for everythign in the family?
 		else if(OwnAllInFamily(p.owner, p.family) ) {
@@ -706,7 +718,18 @@ naive_ai = {
 			p = game.property(props_to_buy[pi])
 			if(p.owner) {
 				// propose a trade
-				what_it_want = game.player(p.owner)
+				other_player = game.player(p.owner)
+				//i = game.propose_trade(
+				//	other_player,
+				//	{slots:[], money:game.money()*0.8, gojcards:0}
+				//	{slots:[p.slot], money:0, gojcards:0})
+
+
+		//   { slots : []   - The properties that are part of the transaction
+		//	   money : x,   - How much cash that is involved
+		//	   gojcards : x - How many get-out-of-jail cards
+		//   }
+
 
 			}
 		}
@@ -723,7 +746,7 @@ naive_ai = {
 		flat_props = flatten(props_to_build_on).reverse()
 
 		for(pi in flat_props) {
-			if(flat_props[pi].houseprice < game.money()*0.75) {
+			if(flat_props[pi].houseprice() < game.money()*0.75) {
 				game.buyhouse(flat_props[pi].slot)
 			}
 		}
