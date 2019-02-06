@@ -6,11 +6,13 @@ CreateCard_advance(chance_cards, "Advance to St. Charles Place", 11, true)
 CreateCard_advance(chance_cards, "Advance to Illinois Avenue", 23, true)
 CreateCard_advance(chance_cards, "Advance to GO", 0, true)
 
-Building loan is due. Collect 150
-You get a 50 return from the bank
+CreateCard_collect(chance_cards, "Building loan is due, collect 150", 150)
+CreateCard_collect(chance_cards, "You get a 50 return from the bank", 50)
+CreateCard_collect(chance_cards, "Speeding ticket 15", 15)
 
 Advance to nearest railroad. If owned by someone else pay double rent
-Speeding ticket 15
+Advance to nearest utility. Pay 10 times the dice roll if owned.
+
 Go to jail without passing go
 Advance to nearest railroad. If owned by someone else pay double rent
 You have been elected chariman of the board, pay 50 to each player
@@ -18,7 +20,6 @@ You have been elected chariman of the board, pay 50 to each player
 GET OUT OF JAIL FREE. Keep until used
 Go 3 steps back
 House maintanence, Pay 25 per house and 100 per hotel
-Advance to nearest utility. Pay 10 times the dice roll if owned.
 
 
 
