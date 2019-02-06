@@ -291,8 +291,8 @@ function UI_CreateDIVsForPlayers() {
 
 function UI_DrawPlayerStats() {
 
-	for(var pi in players) {
-		pl = players[pi]
+	for(var pi in original_players) {
+		pl = original_players[pi]
 		UI_UpdatePlayerMoney(pl)
 		UI_UpdatePlayerProperties(pl)
 		UI_UpdatePlayerGOJcards(pl)

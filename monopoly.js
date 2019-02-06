@@ -452,6 +452,7 @@ var CHOICES_CHANCE_OR_PAY=0
 //
 var properties = [];
 var players = [];
+var original_players = []; // for UI and debugging
 var game = null;
 var next_player = 0;
 var double_rolls_so_far = 0;
@@ -868,6 +869,9 @@ function OnLoad() {
 	players.push(MakePlayer(naive_ai))
 	players.push(MakePlayer(naive_ai))
 	players.push(MakePlayer(naive_ai))
+	for(p in players) {
+		original_players.push(players[p])
+	}
 
 	MakeProperties()
 
