@@ -234,7 +234,7 @@ function MakeGame() {
 		// to double rent for rails and utilities, if hit by the next move
 		_gotoslot_doublerent_rail_or_utility : function() {
 			this._gotoslot_double = true;
-		}
+		},
 		_gotoslot : function(slot) {
 			// Is this a property owned by someone
 
@@ -882,9 +882,8 @@ function OnLoad() {
 	players.push(MakePlayer(naive_ai))
 	players.push(MakePlayer(naive_ai))
 	players.push(MakePlayer(naive_ai))
-	for(p in players) {
-		original_players.push(players[p])
-	}
+
+	original_players = players.slice()
 
 	MakeProperties()
 

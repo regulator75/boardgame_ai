@@ -9,6 +9,7 @@ function cards_init() {
  	chance_cards_index = 0;
 	community_cards = []
 	community_cards_index = 0; // Its OK, the deck is randomized on creation
+	CreateChanceAndCommunityCards()
 }
 
 function cards_DrawChance(game) {
@@ -22,6 +23,30 @@ function cards_DrawCommunity(game) {
 	community_cards_index++;
 	community_cards_index %= community_cards.length;
 }
+
+function cardsDEBUG_DrawEveryChanceCard(game) {
+	// NOTE when using this debug function bankcrupt
+	// players may regain money and end-game stats
+	// will look funny
+	var startslot = game.current_player._slot
+
+	for( c1 in chance_cards ) {
+		cards_DrawChance(game)
+		game.current_player._slot = startslot // dont use gotoslot since that will recurse
+	}
+}
+function cardsDEBUG_DrawEveryCommunityCard(game) {
+	// NOTE when using this debug function bankcrupt
+	// players may regain money and end-game stats
+	// will look funny	
+	var startslot = game.current_player._slot
+
+	for( c1 in community_cards ) {
+		cards_DrawCommunity(game)
+		game.current_player._slot = startslot // dont use gotoslot since that will recurse
+	}
+}
+
 
 function CreateChanceAndCommunityCards() {
 
@@ -50,9 +75,9 @@ function CreateChanceAndCommunityCards() {
 			var player = game.current_player
 			// TODO double rent.
 			game._gotoslot_doublerent_rail_or_utility()
-			if(player._slot < X)  { game._gotoslot(X) } // 0-5
-			if(player._slot < Y) { game._gotoslot(Y) } 
-			if(player._slot < 40) { player._money += 200; game._gotoslot(X)} // will pass Go, special treatment.
+			if(player._slot < 12)  { game._gotoslot(12) } // 0-5
+			if(player._slot < 28) { game._gotoslot(28) } 
+			if(player._slot < 40) { player._money += 200; game._gotoslot(12)} // will pass Go, special treatment.
 		}) // TODO 10x if they own both?
 
 	CreateCard_advance(chance_cards, "Go to jail without passing go", 40, false)
@@ -69,10 +94,10 @@ function CreateChanceAndCommunityCards() {
 
 		// Second check, if there are not enough funds split the money and bancrupt the player
 		var perPlayerPayout
-		var bancrupt = false
+		var bankcrupt = false
 		if(game.current_player.money() < ammount) {
 			perPlayerPayout = Math.floor(game.current_player.money() / (players.length-1))
-			bancrupt = true
+			bankcrupt = true
 		} else {
 			perPlayerPayout = 50 // They all got their money.
 		}
@@ -88,13 +113,14 @@ function CreateChanceAndCommunityCards() {
 			game.current_player._money = -1
 			game._remove_bancruptsy_players()
 		}
-	}
+	})
 
 	CreateCard(chance_cards,"GET OUT OF JAIL FREE. Keep until used", function(game) { game.current_player._gojcards += 1} )
 
 	CreateCard(chance_cards,"Go 3 steps back", function(game) { 
-		var destindex = (game.current_player._slot + 37 % 40)
-		game._gotoslot(destindex)}
+		var destindex = ((game.current_player._slot + 37) % 40)
+		game._gotoslot(destindex)
+	})
 
 
 	CreateCard(chance_cards,"House maintanence, Pay 25 per house and 100 per hotel", function(game) { 
@@ -109,8 +135,7 @@ function CreateChanceAndCommunityCards() {
 			}
 		}
 		PlayerPay(game.current_player, totalCost)
-
-	)
+	})
 
 
 
@@ -138,9 +163,10 @@ function CreateChanceAndCommunityCards() {
 
 	CreateCard(community_cards, "Its your birthday, collect 10 from each player", function(game) {
 			var collected = 0
-			for(p in players) {
-				if(players[p] != game.current_player) {
-					collected += PlayerPay(players[p], 10)
+			var players_safe = players.slice(); // Since they may go bankcrupt and mess up indexes
+			for(p in players_safe) {
+				if(players_safe[p] != game.current_player) {
+					collected += PlayerPay(players_safe[p], 10)
 				}
 			}
 			game.current_player._money += collected
@@ -161,8 +187,7 @@ function CreateChanceAndCommunityCards() {
 			}
 		}
 		PlayerPay(game.current_player, totalCost)
-
-	)
+	})
 
 	CreateCard_advance(chance_cards, "GO TO JAIL", 40, false)
 }
@@ -190,11 +215,11 @@ function CreateCard_advance(deck, description, destindex, payforgo) {
 }
 
 function CreateCard_pay(deck, description, ammount) {
-	CreateCard(deck, description, function(game) { PlayerPay(game.current_player, ammount); }
+	CreateCard(deck, description, function(game) { PlayerPay(game.current_player, ammount); })
 }
 
 function CreateCard_collect(deck, description, ammount) {
-	CreateCardDeck(deck,description, function(game) { game.current_player._money += ammount})
+	CreateCard(deck,description, function(game) { game.current_player._money += ammount})
 }
 
 function PlayerPay(player, ammount) {
