@@ -230,6 +230,11 @@ function MakeGame() {
 			return d1==d2
 
 		},
+		// This function is used by Chance cards and community chest cards
+		// to double rent for rails and utilities, if hit by the next move
+		_gotoslot_doublerent_rail_or_utility : function() {
+			this._gotoslot_double = true;
+		}
 		_gotoslot : function(slot) {
 			// Is this a property owned by someone
 
@@ -284,6 +289,12 @@ function MakeGame() {
 
 			}
 
+			// Special fix for community card that demans
+			// twice the paymet for rail or company slots
+			if(all_slots[slot].family == "rail" || all_slots[slot].family == "company") {
+				rent *= 2
+			}
+
 
 			if(rent > 0){
 
@@ -319,6 +330,8 @@ function MakeGame() {
 					}
 				}
 			}
+
+			_gotoslot_double = false
 		},
 
 		_remove_bancruptsy_players: function() {
