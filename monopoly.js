@@ -280,10 +280,10 @@ function MakeGame() {
 					rent = prop.cost
 					break;
 				case TYPE_CHANCE:
-					// TODO Add cards and shit
+					cards_DrawChance(this);
 					break;
 				case TYPE_COMMUNITY:
-					// TODO Add cards and shit
+					cards_DrawCommunity(this);
 					break;
 
 
@@ -893,6 +893,7 @@ function OnLoad() {
 	UI_CreateDIVsForPlayers()
 	UI_DrawBoard();
 	UI_DrawPlayerStats()
+	cards_init()
 
 	//runner();
 	interval = window.setInterval(function(){runner()}, 50);
