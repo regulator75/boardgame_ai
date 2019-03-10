@@ -120,7 +120,9 @@ function tick() {
 	game.expunge_trade_records() // dont leave lingering trades
 	var last = double_rolls_so_far == 2;
 
-	if( game._rolldice(last) && !last) {
+	// note last check is important to happen after rolldice.
+	// Rolldice may cause bankrupt.
+	if( game._rolldice(last) && !last && player.money() >= 0) { 
 		double_rolls_so_far++;
 	} else {
 		next_player++;
@@ -377,7 +379,7 @@ function MakeGame() {
 		},
 
 		get_mortaged_properties : function() {
-			return this.current_player.get_mortagable_properties()
+			return this.current_player.get_mortaged_properties()
 		},
 
 		paytogetoutjail: function() {
@@ -588,8 +590,8 @@ function MakePlayer(ai) {
 			return retval
 		},
 
-		get_mortged_properties : function() {
-			return all_slots.filter(prop => (prop.owner() == this && prop.mortaged()))
+		get_mortaged_properties : function() {
+			return this.properties().filter(prop => prop.mortaged())
 		}
 
 	}
