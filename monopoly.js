@@ -37,6 +37,7 @@ simple_player_ai = {
 		// game.player(i).properties() - returns a vector of the owned properties of this player
 		// game.player(i).getoutofjailcards() - How many get-out-of-jail cards do this player have.
 		// game.player(i).get_properties_missing_from_sets() - what properties would give this AI an monopoly
+		// game.player(i).get_mortagable_properties() - what properties does this AI have that are not part of sets.
 
 		// APIs for helping the AI determining things
 		// These are plain support function that could be implemented by the AI 
@@ -48,6 +49,8 @@ simple_player_ai = {
 		//   returns a vector of vectors of properties that if aquired makes a set
 		//   Note that this list of propertis are NOT owned by the AI at this time.
 		//
+		// game.get_mortagable_properties()
+		//   what properties does this AI have that have no houses. Will include railroads and companies
 
 
 
@@ -369,6 +372,14 @@ function MakeGame() {
 			return this.current_player.get_properties_missing_from_sets()
 		},
 
+		get_mortagable_properties : function() {
+			return this.current_player.get_undeveloped_properties()
+		},
+
+		get_mortaged_properties : function() {
+			return this.current_player.get_mortagable_properties()
+		},
+
 		paytogetoutjail: function() {
 			if(this.injail() && this.current_player.money() >= 50) {
 				this.current_player._money -= 50
@@ -517,6 +528,33 @@ function MakePlayer(ai) {
 				}
 			}
 			return toreturn			
+		},
+		get_mortagable_properties: function() {
+			// Get all possible-buildable properties. Make sure there are no houses at all on the
+			// color and then add all of them
+			var myfamilies = GetAllFamiliesOwned()
+			var retval = []
+			for (famidx in myfamilies) {
+				allPropsInFamily = GetPropertiesInFamily(myfamilies[famidx])
+
+				if(myfamilies[famidx] == "rail" || myfamilies[famidx] == "company") {
+					// These never have houses, they are for sure not bound by houses. Add all that 
+					// are not already mortaged
+					retval.push(... allPropsInFamily.filter(prop => prop.mortaged() != true))
+				} else {
+					var housecount = allPropsInFamily.reduce(function(acc, elem) { return acc+elem.houses},0)
+					if(housecount == 0) {
+						// Add all properties that are not mortaged.
+						retval.push(... allPropsInFamily.filter(prop => prop.mortaged() != true))
+					} else {
+						// There where properties on some houses so they cannot be mortaged.
+					}
+				}
+			}
+		},
+
+		get_mortged_properties : function() {
+			return all_slots.filter(prop => (prop.owner() == this && prop.mortaged()))
 		}
 
 	}
@@ -629,7 +667,16 @@ function GetAllFamiliesOfBuildablePropertiesOwned(owner) {
 	return x;
 }
 
-
+function GetAllFamiliesOwned(owner) {
+	var toreturnSet = all_slots.reduce(
+		function(acc,prop,idx) {
+			if(prop.owner == owner) {
+				acc.add(prop.family)
+			}
+			return acc
+		}, new Set())
+	return [... toreturnSet]
+}
 
 // Assumes
 //  1. Its a property that you can build houses on (TYPE_LAND)
