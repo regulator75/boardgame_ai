@@ -414,7 +414,7 @@ function MakeGame() {
 		}, 
 
 		liftmortage: function(prop) {
-			var pricePlus10Percent = Math.floor(prop.price * 1.10)
+			var pricePlus10Percent = Math.floor(prop.price() * 1.10)
 			if(this.current_player.money() >= pricePlus10Percent) {
 				this.current_player._money -= pricePlus10Percent
 				prop._mortaged = false
