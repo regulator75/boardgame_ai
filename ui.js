@@ -105,6 +105,13 @@ function DebugDraw(ctx) {
 		if(all_slots[p]._owner) { // Not all properties are owneable..
 			ctx.strokeStyle = all_slots[p].owner().marker_color
 			ctx.rect(r.x,r.y,r.w,r.h)
+			if(all_slots[p].mortaged()) {
+				// Make it obvious this is mortaged by putting an X over it
+				ctx.moveTo(r.x,r.y)
+				ctx.lineTo(r.x + r.w, r.y + r.h)
+				ctx.moveTo(r.x + r.w,r.y)
+				ctx.lineTo(r.x,  r.y + r.h)
+			}
 		} else {
 			ctx.strokeStyle = "gray"
 		}
