@@ -84,6 +84,13 @@ naive_ai = {
 	},
 
 	raise_money: function(game, lacking_funds) {
-		// Just fail..
+		// Mortage some stuff
+		var canMortage = game.get_mortagable_properties()
+		var fundsLeft = lacking_funds
+		for(i in canMortage) {
+			fundsLeft -= game.mortage(canMortage[i])
+			if(fundsLeft < 0)
+				return
+		}
 	}
 }

@@ -251,7 +251,7 @@ function MakeGame() {
 			switch(all_slots[slot].type) {
 				case TYPE_LAND:
 					// Check if we need to pay
-					if(prop.owner() != null && prop.owner() != this.current_player) {
+					if(prop.owner() != null && prop.owner() != this.current_player && !prop.mortaged()) {
 						recieving_player = prop.owner() 
 						// Need to pay...
 						rent = CalculateRent(slot)
@@ -373,7 +373,7 @@ function MakeGame() {
 		},
 
 		get_mortagable_properties : function() {
-			return this.current_player.get_undeveloped_properties()
+			return this.current_player.get_mortagable_properties()
 		},
 
 		get_mortaged_properties : function() {
@@ -384,6 +384,40 @@ function MakeGame() {
 			if(this.injail() && this.current_player.money() >= 50) {
 				this.current_player._money -= 50
 				this._gotoslot(10)
+			}
+		},
+		mortage: function(prop) {
+			var moneyMortaged = 0
+			if(this.current_player != prop.owner()) {
+				// Not this AIs slot..
+			} else {
+				// In effective way of counting the number of hosues that would violate 
+				// mortaging this property.
+				var violatingHouses = all_slots.reduce(function(acc,elem) {
+					if(elem.owner == this.current_player && elem.family == prop.family && elem.type == TYPE_LAND){
+						return acc + elem.houses // Count the houses on this property
+					} else {
+						return acc
+					}
+				}, 0)
+
+				if(violatingHouses > 0) {
+					// Cant mortage this property, there are houses in the way
+				} else {
+					// Finally, can be mortaged. Set the flag and get the money
+					prop._mortaged = true
+					moneyMortaged = prop.price() / 2
+					this.current_player._money += moneyMortaged
+				}
+			}
+			return moneyMortaged
+		}, 
+
+		liftmortage: function(prop) {
+			var pricePlus10Percent = Math.floor(prop.price * 1.10)
+			if(this.current_player.money() >= pricePlus10Percent) {
+				this.current_player._money -= pricePlus10Percent
+				prop._mortaged = false
 			}
 		},
 
@@ -532,17 +566,17 @@ function MakePlayer(ai) {
 		get_mortagable_properties: function() {
 			// Get all possible-buildable properties. Make sure there are no houses at all on the
 			// color and then add all of them
-			var myfamilies = GetAllFamiliesOwned()
+			var myfamilies = GetAllFamiliesOwned(this)
 			var retval = []
 			for (famidx in myfamilies) {
-				allPropsInFamily = GetPropertiesInFamily(myfamilies[famidx])
+				allPropsInFamily = GetPropertiesInFamily(myfamilies[famidx]).filter(p => p.owner() == this)
 
 				if(myfamilies[famidx] == "rail" || myfamilies[famidx] == "company") {
 					// These never have houses, they are for sure not bound by houses. Add all that 
 					// are not already mortaged
 					retval.push(... allPropsInFamily.filter(prop => prop.mortaged() != true))
 				} else {
-					var housecount = allPropsInFamily.reduce(function(acc, elem) { return acc+elem.houses},0)
+					var housecount = allPropsInFamily.reduce(function(acc, elem) { return acc+elem.houses()},0)
 					if(housecount == 0) {
 						// Add all properties that are not mortaged.
 						retval.push(... allPropsInFamily.filter(prop => prop.mortaged() != true))
@@ -551,6 +585,7 @@ function MakePlayer(ai) {
 					}
 				}
 			}
+			return retval
 		},
 
 		get_mortged_properties : function() {
@@ -670,7 +705,7 @@ function GetAllFamiliesOfBuildablePropertiesOwned(owner) {
 function GetAllFamiliesOwned(owner) {
 	var toreturnSet = all_slots.reduce(
 		function(acc,prop,idx) {
-			if(prop.owner == owner) {
+			if(prop.type == TYPE_LAND && prop.owner() == owner) {
 				acc.add(prop.family)
 			}
 			return acc
