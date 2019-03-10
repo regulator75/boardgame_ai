@@ -89,7 +89,7 @@ function CreateChanceAndCommunityCards() {
 		// Check if there are enough funds.
 		if(game.current_player.money() < ammount) {
 			// Need to raise funds.
-			player.ai.raise_money(this, ammount - player._money)
+			player.ai.raise_money(game, ammount - player._money)
 		}
 
 		// Second check, if there are not enough funds split the money and bancrupt the player
