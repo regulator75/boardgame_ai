@@ -20,6 +20,12 @@ naive_ai = {
 		// Should I free up properties that I have mortaged?
 		//
 
+		// Lift one per turn if we can afford it
+		var mortaged = game.get_mortaged_properties()
+		if(mortaged.length > 0 && game.money() > mortaged[mortaged.length-1].price()*2) {
+			game.liftmortage(mortaged[mortaged.length-1])
+		}
+
 
 
 		//
