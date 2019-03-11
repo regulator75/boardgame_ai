@@ -188,6 +188,25 @@ function MakeGame() {
 			}
 		},
 
+		sellhouse: function(slot) {
+			// Assume AI is getting this wrong, be very defensive
+			// (Assumption, the board is legal, so no need to check for family completeness)
+			p = this.property(slot)
+			var money_recovered = 0
+
+			var havehouses = p.houses() > 0
+
+			var nootherhaveonehousemore = this.property(this.property_complements(slot)).filter(elem => elem.houses() > p.houses()).length == 0
+
+			if(havehouses && nootherhaveonehousemore) {
+				p._houses -= 1
+				money_recovered = p.houseprice() / 2
+				this.current_player._money += money_recovered
+			}
+			return money_recovered
+
+		},
+
 		property_complements: function(slot) {
 			return GetPropertiesInFamily_Slots(all_slots[slot].family).filter(v => v!= slot)
 		},
@@ -392,12 +411,14 @@ function MakeGame() {
 			var moneyMortaged = 0
 			if(this.current_player != prop.owner()) {
 				// Not this AIs slot..
+			} else if(prop.mortaged()) {
+				// Cant do this twice.
 			} else {
 				// In effective way of counting the number of hosues that would violate 
 				// mortaging this property.
-				var violatingHouses = all_slots.reduce(function(acc,elem) {
-					if(elem.owner == this.current_player && elem.family == prop.family && elem.type == TYPE_LAND){
-						return acc + elem.houses // Count the houses on this property
+				var violatingHouses = this.current_player.properties().reduce(function(acc,elem) {
+					if(elem.family == prop.family && elem.type == TYPE_LAND){
+						return acc + elem.houses() // Count the houses on this property
 					} else {
 						return acc
 					}
