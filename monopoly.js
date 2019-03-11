@@ -531,7 +531,6 @@ var CHOICES_CHANCE_OR_PAY=0
 //
 // Data
 //
-var properties = [];
 var players = [];
 var original_players = []; // for UI and debugging
 var game = null;
@@ -869,14 +868,31 @@ function runner() {
 		//var runFast = false;//document.getElementById("fastrun").checked
 	} else {
 		// Game over. Restart
-		window.clearInterval(interval)
-		interval = null
+
+		elem = document.getElementById("winlog")
+		elem.innerHTML += "<br>Winner: " + players[0].marker_color
+		ResetGame()
+
+		//window.clearInterval(interval)
+		//interval = null
 	}
 	UI_DrawBoard();
 	UI_DrawPlayerStats()
 
 }
+
 function OnLoad() {
+	ResetGame()
+	interval = window.setInterval(function(){runner()}, 50);
+}
+
+var divs_generated = false;
+function ResetGame() {
+	players = []
+	game = null
+	original_players = []
+	all_slots = []
+	colorcount = 0 // Affects DIV generation...
 
 	game = MakeGame()
 	players.push(MakePlayer(naive_ai))
@@ -890,13 +906,16 @@ function OnLoad() {
 
 	// Draw current board
 	CalculatePieceLocations(document.getElementById("myCanvas"));
-	UI_CreateDIVsForPlayers()
+	if(!divs_generated) {
+		//TODO get rid of this ugly hack. Dont create divs like this.
+		divs_generated=true
+		UI_CreateDIVsForPlayers()	
+	}
 	UI_DrawBoard();
 	UI_DrawPlayerStats()
 	cards_init()
 
-	//runner();
-	interval = window.setInterval(function(){runner()}, 50);
+
 
 
 }

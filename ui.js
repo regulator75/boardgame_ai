@@ -1,3 +1,6 @@
+// Data
+var properties = [];
+
 function UI_DrawBoard(){
 	var c = document.getElementById("myCanvas");
 	var ctx = c.getContext("2d");
@@ -204,6 +207,8 @@ function DrawHouses(ctx) {
 
 
 function CalculatePieceLocations(c) {
+
+	properties = []
 	// Monopoly board is 40 places. 0, 10, 20, 30 are the corners
 
 	// Declare constants
