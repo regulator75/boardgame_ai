@@ -98,5 +98,21 @@ naive_ai = {
 			if(fundsLeft < 0)
 				return
 		}
+
+		// If we get here, lets sell houses.
+		var done = false
+		while(!done) {
+			var housed_properties = game.properties().filter(p => p.houses() > 0)
+			if(housed_properties.length > 0 ) {
+				for(h in housed_properties) {
+					fundsLeft -= game.sellhouse(housed_properties[h].slot)
+					if(fundsLeft < 0) {
+						return
+					}
+				}
+			} else {
+				done = true; // We will go bancrupt
+			}
+		}
 	}
 }
