@@ -134,7 +134,7 @@ function CreateChanceAndCommunityCards() {
 				totalCost += 100
 			}
 		}
-		PlayerPay(game.current_player, totalCost)
+		PlayerPay(game, game.current_player, totalCost)
 	})
 
 
@@ -166,7 +166,7 @@ function CreateChanceAndCommunityCards() {
 			var players_safe = players.slice(); // Since they may go bankcrupt and mess up indexes
 			for(p in players_safe) {
 				if(players_safe[p] != game.current_player) {
-					collected += PlayerPay(players_safe[p], 10)
+					collected += PlayerPay(game, players_safe[p], 10)
 				}
 			}
 			game.current_player._money += collected
@@ -186,7 +186,7 @@ function CreateChanceAndCommunityCards() {
 				totalCost += 115
 			}
 		}
-		PlayerPay(game.current_player, totalCost)
+		PlayerPay(game, game.current_player, totalCost)
 	})
 
 	CreateCard_advance(chance_cards, "GO TO JAIL", 40, false)
@@ -215,19 +215,19 @@ function CreateCard_advance(deck, description, destindex, payforgo) {
 }
 
 function CreateCard_pay(deck, description, ammount) {
-	CreateCard(deck, description, function(game) { PlayerPay(game.current_player, ammount); })
+	CreateCard(deck, description, function(game) { PlayerPay(game, game.current_player, ammount); })
 }
 
 function CreateCard_collect(deck, description, ammount) {
 	CreateCard(deck,description, function(game) { game.current_player._money += ammount})
 }
 
-function PlayerPay(player, ammount) {
+function PlayerPay(game, player, ammount) {
 	var actuallyPaid;
 
 	if(player.money() < ammount) {
 		// Player does not have enough money
-		player.ai.raise_money(this, ammount - player._money)
+		player.ai.raise_money(game, ammount - player._money)
 		
 		// If player raised money properly, _money will now have enough.
 		if(player._money < ammount) {
