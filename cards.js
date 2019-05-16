@@ -103,8 +103,8 @@ function CreateChanceAndCommunityCards() {
 		}
 
 		for(p in players) {
-			if(p != game.current_player) {
-				p._money += perPlayerPayout
+			if(players[p] != game.current_player) {
+				players[p]._money += perPlayerPayout
 				game.current_player._money -= perPlayerPayout
 			}
 		}
@@ -166,6 +166,8 @@ function CreateChanceAndCommunityCards() {
 			var players_safe = players.slice(); // Since they may go bankcrupt and mess up indexes
 			for(p in players_safe) {
 				if(players_safe[p] != game.current_player) {
+					// BUG if the other player needs to raise money it goes
+					// bad because that code operates on "current player"
 					collected += PlayerPay(game, players_safe[p], 10)
 				}
 			}
