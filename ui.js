@@ -4,7 +4,7 @@ var properties = [];
 function UI_DrawBoard(){
 	var c = document.getElementById("myCanvas");
 	var ctx = c.getContext("2d");
-	ctx.clearRect(0, 0, c.width, c.height);
+	//ctx.clearRect(0, 0, c.width, c.height);
 	var background = new Image()
 	background.src='board.png';
 	background.onload = function() {
@@ -284,7 +284,7 @@ function PlayerDivname(p) {
 	return p.marker_color
 }
 
-var TEMPLATE = `
+var TEMPLATE = `	
 <div id=\"PLAYERNAME\" >
 Money: <div id=\"PLAYERNAME_money\"> </div><br>
 GOJ cards:<div id=\"PLAYERNAME_gojcards\"> </div><br>

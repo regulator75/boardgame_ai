@@ -116,7 +116,12 @@ function tick() {
 	if(!player || !player.ai ) {
 		var breakme=null
 	}
+
+	// Magic time. Record the board state for this player
+	stats_RecordBoard(next_player)
+
 	player.ai.turn(game)
+
 	game.expunge_trade_records() // dont leave lingering trades
 	var last = double_rolls_so_far == 2;
 
@@ -870,7 +875,7 @@ function runner() {
 		// Game over. Restart
 
 		elem = document.getElementById("winlog")
-		elem.innerHTML += "<br>Winner: " + players[0].marker_color
+		elem.innerHTML += stats_dump_data()
 		ResetGame()
 
 		//window.clearInterval(interval)
@@ -884,6 +889,10 @@ function runner() {
 function OnLoad() {
 	ResetGame()
 	interval = window.setInterval(function(){runner()}, 50);
+
+	// Type the header for the CSV
+	elem = document.getElementById("winlog")
+	elem.innerHTML += stats_dump_hdr() + "<br>"
 }
 
 var divs_generated = false;
@@ -893,6 +902,7 @@ function ResetGame() {
 	original_players = []
 	all_slots = []
 	colorcount = 0 // Affects DIV generation...
+	stats_init()
 
 	game = MakeGame()
 	players.push(MakePlayer(naive_ai))
