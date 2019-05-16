@@ -118,7 +118,7 @@ function tick() {
 	}
 
 	// Magic time. Record the board state for this player
-	stats_RecordBoard(next_player)
+	stats_RecordBoard(player)
 	if(player.money() < 0) {
 		break_shit()
 	}
@@ -375,8 +375,7 @@ function MakeGame() {
 			var losslevel = players.length - 1; 
 			for(remove_idx in removeus) {
 				player_being_removed = removeus[remove_idx]
-				player_being_removed_original_index = original_players.findIndex(x => x == player_being_removed) 
-				stats_RecordLoss(player_being_removed_original_index ,losslevel)
+				stats_RecordLoss(player_being_removed ,losslevel)
 				losslevel--; // Very rare that we bancrupt more than one player, but theoretically possible with a card
 			}
 
