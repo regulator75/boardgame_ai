@@ -119,6 +119,9 @@ function tick() {
 
 	// Magic time. Record the board state for this player
 	stats_RecordBoard(next_player)
+	if(player.money() < 0) {
+		break_shit()
+	}
 
 	player.ai.turn(game)
 
@@ -365,6 +368,18 @@ function MakeGame() {
 
 		_remove_bancruptsy_players: function() {
 			removeus = players.filter(function(p) { return p._money < 0 })
+
+			//
+			// For the magic, record that this was a loss for this player
+			//
+			var losslevel = players.length - 1; 
+			for(remove_idx in removeus) {
+				player_being_removed = removeus[remove_idx]
+				player_being_removed_original_index = original_players.findIndex(x => x == player_being_removed) 
+				stats_RecordLoss(player_being_removed_original_index ,losslevel)
+				losslevel--; // Very rare that we bancrupt more than one player, but theoretically possible with a card
+			}
+
 			for(s in all_slots) {
 				if(removeus.includes(all_slots[s]._owner)) {
 					// Any owned properties goes back to the bank, that
@@ -890,9 +905,10 @@ function OnLoad() {
 	ResetGame()
 	interval = window.setInterval(function(){runner()}, 50);
 
+	stats_init()
 	// Type the header for the CSV
 	elem = document.getElementById("winlog")
-	elem.innerHTML += stats_dump_hdr() + "<br>"
+	elem.innerHTML += stats_dump_hdr() + "\n"
 }
 
 var divs_generated = false;
@@ -902,7 +918,7 @@ function ResetGame() {
 	original_players = []
 	all_slots = []
 	colorcount = 0 // Affects DIV generation...
-	stats_init()
+	stats_new_game()
 
 	game = MakeGame()
 	players.push(MakePlayer(naive_ai))
