@@ -12,8 +12,8 @@ game.
 The AIs are added in the function ResetGame
 
 Legend: 
-"GOJ": Get out of jail card
-Colored circle on the board: Players current location
-Colored rectangle around property: Owned by that player
-Colored rectangle but with a cross: Mortaged property
+* "GOJ": Get out of jail card
+* Colored circle on the board: Players current location
+* Colored rectangle around property: Owned by that player
+* Colored rectangle but with a cross: Mortaged property
 
